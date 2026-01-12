@@ -906,7 +906,7 @@ server <- function(input, output, session) {
           system_prompt = system_prompt
         )
       } else if (input$ai_provider == "gemini") {
-        rv$chat <- chat_gemini(
+        rv$chat <- chat_google_gemini(
           model = input$ai_model,
           system_prompt = system_prompt
         )
