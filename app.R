@@ -129,24 +129,24 @@ ui <- page_sidebar(
         value = "ai_panel",
         icon = bsicons::bs_icon("robot"),
 
+        # UPDATED: Added "Local (Ollama)" to choices
         selectInput(
           "ai_provider",
           "AI Provider",
           choices = c(
+            "Local (Ollama)" = "ollama",
             "Anthropic (Claude)" = "anthropic",
             "Google (Gemini)" = "gemini",
             "OpenAI (GPT)" = "openai"
           ),
-          selected = "anthropic"
+          selected = "ollama"
         ),
 
         selectInput(
           "ai_model",
           "Model",
-          choices = c(
-            "claude-haiku-4-5-20251001" = "claude-haiku-4-5-20251001"
-          ),
-          selected = "claude-haiku-4-5-20251001"
+          choices = NULL, # We update this in server
+          selected = NULL
         ),
 
         textAreaInput(
@@ -217,14 +217,15 @@ ui <- page_sidebar(
       )
     ),
 
-    # Decision Tree Tab
+    # Decision Tree Tab (with AI Chat)
     nav_panel(
       title = "Decision Tree",
       icon = bsicons::bs_icon("diagram-3"),
 
       layout_columns(
-        col_widths = c(8, 4),
+        col_widths = c(7, 5),
 
+        # Left: Tree Visualization
         card(
           card_header(
             class = "bg-primary text-white",
@@ -248,61 +249,20 @@ ui <- page_sidebar(
           )
         ),
 
+        # Right: AI Chat
         card(
           card_header(
-            class = "bg-secondary text-white",
-            "Model Summary"
-          ),
-          card_body(
-            conditionalPanel(
-              condition = "output.model_built",
-
-              h5("Variable Importance"),
-              plotOutput("var_importance", height = "200px"),
-
-              hr(),
-
-              h5("Model Statistics"),
-              verbatimTextOutput("model_stats"),
-
-              hr(),
-
-              h5("Confusion Matrix"),
-              DTOutput("confusion_matrix")
-            ),
-            conditionalPanel(
-              condition = "!output.model_built",
-              div(
-                class = "text-center py-3 text-muted",
-                "Build a model to see summary statistics"
-              )
-            )
-          )
-        )
-      )
-    ),
-
-    # AI Interpretation Tab
-    nav_panel(
-      title = "AI Interpretation",
-      icon = bsicons::bs_icon("chat-dots"),
-
-      layout_columns(
-        col_widths = c(12),
-
-        card(
-          card_header(
-            class = "bg-primary text-white d-flex justify-content-between align-items-center",
-            span("AI-Powered Analysis"),
+            class = "bg-secondary text-white d-flex justify-content-between align-items-center",
+            span("AI Interpretation"),
             actionButton(
               "clear_chat",
-              "Clear Chat",
+              "Clear",
               class = "btn-sm btn-outline-light",
               icon = icon("trash")
             )
           ),
           card_body(
-            min_height = "500px",
+            min_height = "600px",
 
             conditionalPanel(
               condition = "!output.model_built",
@@ -320,32 +280,32 @@ ui <- page_sidebar(
               # Chat history display
               div(
                 id = "chat_container",
-                style = "height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #f8f9fa;",
+                style = "height: 380px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; background-color: #f8f9fa;",
                 uiOutput("chat_history")
               ),
 
               # Quick action buttons
               div(
-                class = "mb-3",
-                actionButton("ask_interpret", "Interpret Tree", class = "btn-outline-primary btn-sm me-2", icon = icon("lightbulb")),
-                actionButton("ask_insights", "Key Insights", class = "btn-outline-primary btn-sm me-2", icon = icon("chart-line")),
-                actionButton("ask_recommendations", "Recommendations", class = "btn-outline-primary btn-sm me-2", icon = icon("list-check")),
-                actionButton("ask_limitations", "Limitations", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
+                class = "mb-2",
+                actionButton("ask_interpret", "Interpret", class = "btn-outline-primary btn-sm me-1", icon = icon("lightbulb")),
+                actionButton("ask_insights", "Insights", class = "btn-outline-primary btn-sm me-1", icon = icon("chart-line")),
+                actionButton("ask_recommendations", "Recommend", class = "btn-outline-primary btn-sm me-1", icon = icon("list-check")),
+                actionButton("ask_limitations", "Limits", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
               ),
 
               # User input
               layout_columns(
-                col_widths = c(10, 2),
+                col_widths = c(9, 3),
                 textAreaInput(
                   "user_message",
                   NULL,
-                  placeholder = "Ask questions about your decision tree...",
+                  placeholder = "Ask about your tree...",
                   rows = 2
                 ),
                 actionButton(
                   "send_message",
                   "Send",
-                  class = "btn-primary btn-lg w-100 h-100",
+                  class = "btn-primary w-100 h-100",
                   icon = icon("paper-plane")
                 )
               )
@@ -363,17 +323,69 @@ ui <- page_sidebar(
       layout_columns(
         col_widths = c(6, 6),
 
-        card(
-          card_header(class = "bg-primary text-white", "Tree Rules"),
-          card_body(
-            verbatimTextOutput("tree_rules")
+        # Left column
+        layout_columns(
+          col_widths = c(12),
+
+          card(
+            card_header(class = "bg-primary text-white", "Model Statistics"),
+            card_body(
+              conditionalPanel(
+                condition = "output.model_built",
+                verbatimTextOutput("model_stats")
+              ),
+              conditionalPanel(
+                condition = "!output.model_built",
+                div(class = "text-center py-3 text-muted", "Build a model to see statistics")
+              )
+            )
+          ),
+
+          card(
+            card_header(class = "bg-primary text-white", "Variable Importance"),
+            card_body(
+              conditionalPanel(
+                condition = "output.model_built",
+                plotOutput("var_importance", height = "200px")
+              ),
+              conditionalPanel(
+                condition = "!output.model_built",
+                div(class = "text-center py-3 text-muted", "Build a model to see importance")
+              )
+            )
+          ),
+
+          card(
+            card_header(class = "bg-primary text-white", "Confusion Matrix"),
+            card_body(
+              conditionalPanel(
+                condition = "output.model_built",
+                DTOutput("confusion_matrix")
+              ),
+              conditionalPanel(
+                condition = "!output.model_built",
+                div(class = "text-center py-3 text-muted", "Build a classification model to see matrix")
+              )
+            )
           )
         ),
 
-        card(
-          card_header(class = "bg-primary text-white", "CP Table"),
-          card_body(
-            DTOutput("cp_table")
+        # Right column
+        layout_columns(
+          col_widths = c(12),
+
+          card(
+            card_header(class = "bg-secondary text-white", "Tree Rules"),
+            card_body(
+              verbatimTextOutput("tree_rules")
+            )
+          ),
+
+          card(
+            card_header(class = "bg-secondary text-white", "CP Table"),
+            card_body(
+              DTOutput("cp_table")
+            )
           )
         )
       )
@@ -422,7 +434,6 @@ server <- function(input, output, session) {
   observeEvent(input$use_demo, {
     if (input$use_demo) {
       # Create HCP GLP-1 Prescribing Survey dataset
-      # Attitudes and beliefs predicting prescribing behavior
       set.seed(123)
       n <- 500
 
@@ -446,72 +457,49 @@ server <- function(input, output, session) {
         n, replace = TRUE
       )
 
-      # === Attitudinal Statements (5-point Likert: 1=Strongly Disagree to 5=Strongly Agree) ===
-      # Create correlated attitudes that form natural segments
-
-      # Underlying latent "enthusiast" trait
+      # === Attitudinal Statements ===
       enthusiast_trait <- rnorm(n, 0, 1)
-
-      # Underlying latent "barrier sensitivity" trait
       barrier_trait <- rnorm(n, 0, 1)
 
-      # Efficacy beliefs - correlated with enthusiast trait
       att_glp1_effective_a1c <- pmin(5, pmax(1, round(3.5 + 0.7 * enthusiast_trait + rnorm(n, 0, 0.8))))
       att_glp1_effective_weight <- pmin(5, pmax(1, round(3.4 + 0.8 * enthusiast_trait + rnorm(n, 0, 0.8))))
       att_glp1_cv_benefit <- pmin(5, pmax(1, round(3.0 + 0.5 * enthusiast_trait + rnorm(n, 0, 1))))
 
-      # Safety/tolerability - mixed relationships
       att_gi_side_effects_concern <- pmin(5, pmax(1, round(3.0 - 0.3 * enthusiast_trait + 0.4 * barrier_trait + rnorm(n, 0, 0.9))))
       att_pancreatitis_concern <- pmin(5, pmax(1, round(2.5 + 0.5 * barrier_trait + rnorm(n, 0, 1))))
       att_patient_tolerability <- pmin(5, pmax(1, round(3.2 + 0.6 * enthusiast_trait - 0.3 * barrier_trait + rnorm(n, 0, 0.8))))
 
-      # Access/cost barriers - correlated with barrier trait
       att_cost_barrier <- pmin(5, pmax(1, round(3.3 + 0.7 * barrier_trait + rnorm(n, 0, 0.8))))
       att_pa_burden <- pmin(5, pmax(1, round(3.5 + 0.6 * barrier_trait + rnorm(n, 0, 0.9))))
       att_patient_afford <- pmin(5, pmax(1, round(2.8 - 0.6 * barrier_trait + rnorm(n, 0, 0.9))))
 
-      # Treatment philosophy
       att_early_intervention <- pmin(5, pmax(1, round(3.2 + 0.6 * enthusiast_trait + rnorm(n, 0, 0.9))))
       att_weight_tx_priority <- pmin(5, pmax(1, round(3.3 + 0.5 * enthusiast_trait + rnorm(n, 0, 0.9))))
       att_prefer_oral_first <- pmin(5, pmax(1, round(3.0 - 0.5 * enthusiast_trait + 0.3 * barrier_trait + rnorm(n, 0, 1))))
 
-      # Experience and confidence - key differentiators
       att_comfortable_initiating <- pmin(5, pmax(1, round(3.0 + 0.8 * enthusiast_trait - 0.2 * barrier_trait + rnorm(n, 0, 0.8))))
       att_adequate_training <- pmin(5, pmax(1, round(3.0 + 0.5 * enthusiast_trait + rnorm(n, 0, 1))))
 
-      # Influence and information
       att_trust_clinical_data <- pmin(5, pmax(1, round(3.5 + 0.4 * enthusiast_trait + rnorm(n, 0, 0.8))))
       att_peer_influence <- pmin(5, pmax(1, round(3.0 + rnorm(n, 0, 1))))
       att_guideline_adherence <- pmin(5, pmax(1, round(3.5 + 0.3 * enthusiast_trait + rnorm(n, 0, 0.9))))
 
-      # Patient factors
       att_patients_interested <- pmin(5, pmax(1, round(3.2 + 0.4 * enthusiast_trait + rnorm(n, 0, 1))))
       att_patients_compliant <- pmin(5, pmax(1, round(2.9 + 0.3 * enthusiast_trait - 0.2 * barrier_trait + rnorm(n, 0, 1))))
 
-      # === Generate Prescribing Outcome ===
-      # Create clear decision boundaries for interpretable tree
-
       prescribe_score <-
-        # Comfort is the primary driver
         0.35 * (att_comfortable_initiating - 3) +
-        # Efficacy beliefs matter
         0.20 * (att_glp1_effective_weight - 3) +
         0.15 * (att_glp1_effective_a1c - 3) +
-        # Barriers reduce prescribing
         -0.25 * (att_cost_barrier - 3) +
         -0.15 * (att_prefer_oral_first - 3) +
-        # Philosophy matters
         0.20 * (att_early_intervention - 3) +
         0.15 * (att_weight_tx_priority - 3) +
-        # Safety concerns reduce
         -0.10 * (att_gi_side_effects_concern - 3) +
-        # Specialty effect
         0.5 * (specialty == "Endocrinology") +
         0.2 * (specialty == "Internal Medicine") +
-        # Add noise
         rnorm(n, 0, 0.5)
 
-      # Create ~45% high prescribers for balanced classes
       threshold <- quantile(prescribe_score, 0.55)
 
       high_prescriber <- factor(
@@ -520,45 +508,28 @@ server <- function(input, output, session) {
       )
 
       hcp_data <- data.frame(
-        # Outcome
         High_Prescriber = high_prescriber,
-
-        # Demographics
         Specialty = factor(specialty),
         Years_in_Practice = years_practice,
         Practice_Setting = factor(practice_setting),
         Region = factor(region),
-
-        # Efficacy beliefs
         Effective_for_A1C = att_glp1_effective_a1c,
         Effective_for_Weight = att_glp1_effective_weight,
         CV_Benefit_Belief = att_glp1_cv_benefit,
-
-        # Safety concerns
         GI_Side_Effect_Concern = att_gi_side_effects_concern,
         Pancreatitis_Concern = att_pancreatitis_concern,
         Patient_Tolerability = att_patient_tolerability,
-
-        # Access barriers
         Cost_is_Barrier = att_cost_barrier,
         Prior_Auth_Burden = att_pa_burden,
         Patients_Can_Afford = att_patient_afford,
-
-        # Treatment philosophy
         Prefer_Early_Intervention = att_early_intervention,
         Weight_Tx_Priority = att_weight_tx_priority,
         Prefer_Oral_First = att_prefer_oral_first,
-
-        # Confidence
         Comfortable_Initiating = att_comfortable_initiating,
         Adequate_Training = att_adequate_training,
-
-        # Influence
         Trust_Clinical_Data = att_trust_clinical_data,
         Peer_Influence = att_peer_influence,
         Follow_Guidelines = att_guideline_adherence,
-
-        # Patient factors
         Patients_Ask_About_GLP1 = att_patients_interested,
         Patients_Compliant = att_patients_compliant
       )
@@ -592,9 +563,17 @@ server <- function(input, output, session) {
   })
 
   # Update AI model choices based on provider
-
   observeEvent(input$ai_provider, {
-    if (input$ai_provider == "anthropic") {
+    # UPDATED: Added logic for Ollama model selection
+    if (input$ai_provider == "ollama") {
+      updateSelectInput(
+        session, "ai_model",
+        choices = c(
+          "Ministral 3 (8B)" = "ministral-3:8b"
+        ),
+        selected = "ministral-3:8b"
+      )
+    } else if (input$ai_provider == "anthropic") {
       updateSelectInput(
         session, "ai_model",
         choices = c(
@@ -900,15 +879,23 @@ server <- function(input, output, session) {
       )
 
       # Create chat based on provider
-      if (input$ai_provider == "anthropic") {
+      if (input$ai_provider == "ollama") {
+        # UPDATED: Added Ollama support
+        rv$chat <- chat_ollama(
+          model = input$ai_model,
+          system_prompt = system_prompt
+        )
+      } else if (input$ai_provider == "anthropic") {
         rv$chat <- chat_anthropic(
           model = input$ai_model,
           system_prompt = system_prompt
         )
       } else if (input$ai_provider == "gemini") {
+        # UPDATED: Added api_key param to prevent browser popup issues
         rv$chat <- chat_google_gemini(
           model = input$ai_model,
-          system_prompt = system_prompt
+          system_prompt = system_prompt,
+          api_key = Sys.getenv("GEMINI_API_KEY")
         )
       } else {
         rv$chat <- chat_openai(
