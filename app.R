@@ -13,13 +13,34 @@ library(tidyr)
 library(ggplot2)
 
 # ============================================================================
+# PRODUCTION MODE TOGGLE
+# ============================================================================
+# Set to TRUE for production (client data) - only Azure OpenAI will be available
+# Set to FALSE for testing/development - all AI providers will be available
+PRODUCTION_MODE <- TRUE
+
+# ============================================================================
 # UI
 # ============================================================================
 
 ui <- page_sidebar(
   title = tags$span(
     tags$span("🌳", style = "margin-right: 8px;"),
-    "Treeveal"
+    "Treeveal",
+    # Show production mode indicator in title
+    if (PRODUCTION_MODE) {
+      tags$span(
+        class = "badge bg-success ms-2",
+        style = "font-size: 0.6em; vertical-align: middle;",
+        "PRODUCTION"
+      )
+    } else {
+      tags$span(
+        class = "badge bg-warning ms-2",
+        style = "font-size: 0.6em; vertical-align: middle;",
+        "DEV MODE"
+      )
+    }
   ),
   theme = bs_theme(
     version = 5,
@@ -98,9 +119,9 @@ ui <- page_sidebar(
         sliderInput(
           "minbucket",
           "Minimum Bucket Size",
-          min = 1,
-          max = 50,
-          value = 5,
+          min = 15,
+          max = 100,
+          value = 30,
           step = 1
         ),
         helpText("Minimum observations in terminal nodes"),
@@ -129,23 +150,50 @@ ui <- page_sidebar(
         value = "ai_panel",
         icon = bsicons::bs_icon("robot"),
 
-        # UPDATED: Added "Local (Ollama)" to choices
-        selectInput(
-          "ai_provider",
-          "AI Provider",
-          choices = c(
-            "Local (Ollama)" = "ollama",
-            "Anthropic (Claude)" = "anthropic",
-            "Google (Gemini)" = "gemini",
-            "OpenAI (GPT)" = "openai"
-          ),
-          selected = "ollama"
-        ),
+        # Show different provider options based on production mode
+        if (PRODUCTION_MODE) {
+          # Production mode: Only Azure OpenAI
+          tagList(
+            div(
+              class = "alert alert-info",
+              bsicons::bs_icon("shield-check"),
+              " Production mode: Using secure Azure OpenAI"
+            ),
+            selectInput(
+              "ai_provider",
+              "AI Provider",
+              choices = c("Azure OpenAI (Secure)" = "azure"),
+              selected = "azure"
+            )
+          )
+        } else {
+          # Development mode: All providers available
+          tagList(
+            div(
+              class = "alert alert-warning mb-3",
+              style = "font-size: 0.85em;",
+              bsicons::bs_icon("exclamation-triangle"),
+              " Dev mode: Do not use with client data"
+            ),
+            selectInput(
+              "ai_provider",
+              "AI Provider",
+              choices = c(
+                "Azure OpenAI (Secure)" = "azure",
+                "Local (Ollama)" = "ollama",
+                "Anthropic (Claude)" = "anthropic",
+                "Google (Gemini)" = "gemini",
+                "OpenAI (GPT)" = "openai"
+              ),
+              selected = "azure"
+            )
+          )
+        },
 
         selectInput(
           "ai_model",
           "Model",
-          choices = NULL, # We update this in server
+          choices = NULL,
           selected = NULL
         ),
 
@@ -564,8 +612,16 @@ server <- function(input, output, session) {
 
   # Update AI model choices based on provider
   observeEvent(input$ai_provider, {
-    # UPDATED: Added logic for Ollama model selection
-    if (input$ai_provider == "ollama") {
+    if (input$ai_provider == "azure") {
+      # Azure OpenAI - model comes from environment variable
+      azure_model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
+      if (azure_model == "") azure_model <- "gpt-4o"  # Default display name
+      updateSelectInput(
+        session, "ai_model",
+        choices = setNames(azure_model, paste0("Azure: ", azure_model)),
+        selected = azure_model
+      )
+    } else if (input$ai_provider == "ollama") {
       updateSelectInput(
         session, "ai_model",
         choices = c(
@@ -879,8 +935,28 @@ server <- function(input, output, session) {
       )
 
       # Create chat based on provider
-      if (input$ai_provider == "ollama") {
-        # UPDATED: Added Ollama support
+      if (input$ai_provider == "azure") {
+        # Azure OpenAI (secure company endpoint)
+        model <- input$ai_model
+        if (model == "" || is.null(model)) {
+          model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
+        }
+        api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
+        endpoint <- Sys.getenv("AZURE_OPENAI_ENDPOINT")
+
+        if (any(c(api_key, endpoint, model) == "")) {
+          stop("Azure environment variables not set. Please ensure AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_DEPLOYMENT are configured.")
+        }
+
+        rv$chat <- ellmer::chat_azure_openai(
+          endpoint = endpoint,
+          model = model,
+          api_key = api_key,
+          api_version = "2025-04-01-preview",
+          system_prompt = system_prompt,
+          echo = FALSE
+        )
+      } else if (input$ai_provider == "ollama") {
         rv$chat <- chat_ollama(
           model = input$ai_model,
           system_prompt = system_prompt
@@ -891,7 +967,6 @@ server <- function(input, output, session) {
           system_prompt = system_prompt
         )
       } else if (input$ai_provider == "gemini") {
-        # UPDATED: Added api_key param to prevent browser popup issues
         rv$chat <- chat_google_gemini(
           model = input$ai_model,
           system_prompt = system_prompt,
