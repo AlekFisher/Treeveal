@@ -1,0 +1,718 @@
+/* ============================================================================
+  Treeveal Custom Styles
+A sophisticated, minimalist design inspired by Apple's design language
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   CSS Variables - Design Tokens
+   ---------------------------------------------------------------------------- */
+:root {
+  /* Primary Palette - Muted, sophisticated */
+  --color-primary: #1d1d1f;
+  --color-primary-light: #424245;
+  --color-secondary: #86868b;
+  --color-tertiary: #a1a1a6;
+
+  /* Accent Colors - Soft pastels */
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-accent-soft: #e8f4fd;
+  --color-success: #34c759;
+  --color-success-soft: #e8f9ed;
+  --color-warning: #ff9f0a;
+  --color-warning-soft: #fff8e8;
+  --color-danger: #ff3b30;
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f7;
+  --bg-tertiary: #fbfbfd;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f5f5f7;
+
+  /* Borders */
+  --border-color: #d2d2d7;
+  --border-light: #e8e8ed;
+
+  /* Typography */
+  --font-primary: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Shadows - Subtle, layered */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+}
+
+/* ----------------------------------------------------------------------------
+   Global Styles
+   ---------------------------------------------------------------------------- */
+body {
+  font-family: var(--font-primary);
+  background-color: var(--bg-secondary);
+  color: var(--color-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+/* Typography refinements */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--color-primary);
+}
+
+p {
+  color: var(--color-primary-light);
+  line-height: 1.6;
+}
+
+/* ----------------------------------------------------------------------------
+   Page Title / Navbar
+   ---------------------------------------------------------------------------- */
+.navbar,
+.bslib-page-title {
+  background: var(--bg-primary) !important;
+  border-bottom: 1px solid var(--border-light);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.navbar-brand,
+.bslib-page-title {
+  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+  color: var(--color-primary) !important;
+  letter-spacing: -0.02em;
+}
+
+/* Mode badges */
+.badge.bg-success {
+  background: var(--color-success-soft) !important;
+  color: var(--color-success) !important;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 0.35em 0.75em;
+}
+
+.badge.bg-warning {
+  background: var(--color-warning-soft) !important;
+  color: #b36b00 !important;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 0.35em 0.75em;
+}
+
+/* ----------------------------------------------------------------------------
+   Sidebar
+   ---------------------------------------------------------------------------- */
+.bslib-sidebar-layout > .sidebar {
+  background: var(--bg-primary) !important;
+  border-right: 1px solid var(--border-light) !important;
+}
+
+.sidebar-title {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-secondary) !important;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Accordion styling */
+.accordion {
+  --bs-accordion-bg: transparent;
+  --bs-accordion-border-color: var(--border-light);
+}
+
+.accordion-item {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.accordion-button {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  background: transparent !important;
+  padding: var(--spacing-md) var(--spacing-sm);
+  box-shadow: none !important;
+}
+
+.accordion-button:not(.collapsed) {
+  color: var(--color-accent);
+  background: transparent !important;
+}
+
+.accordion-button::after {
+  width: 1rem;
+  height: 1rem;
+  background-size: 1rem;
+}
+
+.accordion-body {
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-lg);
+}
+
+/* ----------------------------------------------------------------------------
+   Cards
+   ---------------------------------------------------------------------------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  background: var(--bg-primary) !important;
+  border-bottom: 1px solid var(--border-light);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+}
+
+.card-header.bg-primary {
+  background: var(--color-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+.card-header.bg-secondary {
+  background: var(--bg-tertiary) !important;
+  color: var(--color-primary) !important;
+}
+
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+/* ----------------------------------------------------------------------------
+   Value Boxes
+   ---------------------------------------------------------------------------- */
+.bslib-value-box {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-sm) !important;
+  overflow: hidden;
+}
+
+.bslib-value-box .value-box-value {
+  font-weight: 600;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+}
+
+.bslib-value-box .value-box-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-secondary);
+}
+
+/* Value box themes */
+.bslib-value-box.bg-primary {
+  background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%) !important;
+  color: var(--color-primary) !important;
+}
+
+.bslib-value-box.bg-secondary {
+  background: linear-gradient(135deg, #e8f4fd 0%, #ffffff 100%) !important;
+}
+
+.bslib-value-box.bg-success {
+  background: linear-gradient(135deg, #e8f9ed 0%, #ffffff 100%) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   Buttons
+   ---------------------------------------------------------------------------- */
+.btn {
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 1.25rem;
+  transition: all var(--transition-fast);
+  border: none;
+  letter-spacing: -0.01em;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: white;
+  box-shadow: 0 1px 2px rgba(0, 113, 227, 0.2);
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline-primary {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+.btn-outline-primary:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.btn-outline-light {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-lg {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+}
+
+/* ----------------------------------------------------------------------------
+   Form Controls
+   ---------------------------------------------------------------------------- */
+.form-control,
+.form-select {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  background-color: var(--bg-primary);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+  outline: none;
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  margin-bottom: 0.375rem;
+}
+
+.form-text {
+  font-size: 0.8125rem;
+  color: var(--color-secondary);
+}
+
+/* File input */
+.form-control[type="file"] {
+  padding: 0.5rem;
+}
+
+.form-control[type="file"]::file-selector-button {
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  margin-right: 0.75rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  transition: background var(--transition-fast);
+}
+
+.form-control[type="file"]::file-selector-button:hover {
+  background: var(--border-color);
+}
+
+/* Checkbox styling */
+.form-check-input {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.form-check-input:checked {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.form-check-input:focus {
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.3);
+  transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Textarea */
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ----------------------------------------------------------------------------
+   Tabs / Navigation
+   ---------------------------------------------------------------------------- */
+.nav-tabs {
+  border-bottom: 1px solid var(--border-light);
+  gap: 0;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: -1px;
+  transition: all var(--transition-fast);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--border-color);
+  background: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: transparent;
+}
+
+/* ----------------------------------------------------------------------------
+   Data Tables
+   ---------------------------------------------------------------------------- */
+.dataTables_wrapper {
+  font-size: 0.875rem;
+}
+
+table.dataTable {
+  border-collapse: collapse !important;
+}
+
+table.dataTable thead th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-secondary);
+  border-bottom: 1px solid var(--border-light) !important;
+  padding: var(--spacing-md) !important;
+}
+
+table.dataTable tbody td {
+  padding: var(--spacing-md) !important;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+table.dataTable tbody tr:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+table.dataTable.stripe tbody tr.odd {
+  background: var(--bg-primary);
+}
+
+table.dataTable.stripe tbody tr.even {
+  background: var(--bg-tertiary);
+}
+
+/* DataTable controls */
+.dataTables_filter input {
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 0.5rem 0.75rem !important;
+  margin-left: 0.5rem;
+}
+
+.dataTables_filter input:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+  outline: none;
+}
+
+.dataTables_info {
+  color: var(--color-secondary);
+  font-size: 0.8125rem;
+}
+
+.dataTables_paginate .paginate_button {
+  border-radius: 6px !important;
+  margin: 0 2px;
+}
+
+.dataTables_paginate .paginate_button.current {
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: white !important;
+}
+
+/* ----------------------------------------------------------------------------
+   Chat Interface
+   ---------------------------------------------------------------------------- */
+#chat_container {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* User message bubble */
+#chat_container .d-flex.justify-content-end > div {
+  background: var(--color-accent) !important;
+  color: white !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+/* AI message bubble */
+#chat_container .d-flex.justify-content-start > div {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px !important;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ----------------------------------------------------------------------------
+   Alerts
+   ---------------------------------------------------------------------------- */
+.alert {
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  padding: var(--spacing-md);
+}
+
+.alert-info {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.alert-warning {
+  background: var(--color-warning-soft);
+  color: #8a5a00;
+}
+
+.alert-success {
+  background: var(--color-success-soft);
+  color: #1a7f37;
+}
+
+/* ----------------------------------------------------------------------------
+   Utilities & Helpers
+   ---------------------------------------------------------------------------- */
+.text-muted {
+  color: var(--color-secondary) !important;
+}
+
+hr {
+  border-color: var(--border-light);
+  opacity: 1;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
+
+/* Code blocks */
+pre, code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+pre {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  overflow-x: auto;
+}
+
+/* Verbatim text output */
+.shiny-text-output[id$="_stats"],
+.shiny-text-output[id$="_rules"] {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  white-space: pre-wrap;
+}
+
+/* ----------------------------------------------------------------------------
+   Animations
+   ---------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Loading state */
+.shiny-busy {
+  cursor: progress;
+}
+
+/* ----------------------------------------------------------------------------
+   Empty State Styling
+   ---------------------------------------------------------------------------- */
+.text-center.py-5 {
+  padding: var(--spacing-2xl) var(--spacing-lg) !important;
+}
+
+.text-center.py-5 h4 {
+  font-weight: 500;
+  margin-top: var(--spacing-md);
+}
+
+.text-center.py-5 p {
+  color: var(--color-secondary);
+}
+
+/* ----------------------------------------------------------------------------
+   Responsive Adjustments
+   ---------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .card-body {
+    padding: var(--spacing-md);
+  }
+
+  .btn-lg {
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Plot Backgrounds
+   ---------------------------------------------------------------------------- */
+.shiny-plot-output {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   Select Input Enhancements (selectize)
+   ---------------------------------------------------------------------------- */
+.selectize-input {
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.selectize-input.focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1) !important;
+}
+
+.selectize-dropdown {
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.selectize-dropdown .option {
+  padding: 0.625rem 0.875rem;
+}
+
+.selectize-dropdown .option.active {
+  background: var(--color-accent-soft) !important;
+  color: var(--color-accent) !important;
+}
+
+/* Multi-select tags */
+.selectize-input .item {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 4px !important;
+  color: var(--color-primary) !important;
+  font-size: 0.8125rem;
+}

@@ -17,7 +17,7 @@ library(ggplot2)
 # ============================================================================
 # Set to TRUE for production (client data) - only Azure OpenAI will be available
 # Set to FALSE for testing/development - all AI providers will be available
-PRODUCTION_MODE <- TRUE
+PRODUCTION_MODE <- FALSE
 
 # ============================================================================
 # UI
@@ -25,7 +25,6 @@ PRODUCTION_MODE <- TRUE
 
 ui <- page_sidebar(
   title = tags$span(
-    tags$span("🌳", style = "margin-right: 8px;"),
     "Treeveal",
     # Show production mode indicator in title
     if (PRODUCTION_MODE) {
@@ -38,24 +37,26 @@ ui <- page_sidebar(
       tags$span(
         class = "badge bg-warning ms-2",
         style = "font-size: 0.6em; vertical-align: middle;",
-        "DEV MODE"
+        "DEV"
       )
     }
   ),
   theme = bs_theme(
     version = 5,
-    bootswatch = "flatly",
-    primary = "#2c3e50",
-    secondary = "#18bc9c",
-    success = "#18bc9c",
-    info = "#3498db",
-    warning = "#f39c12",
-    danger = "#e74c3c",
-    base_font = font_google("Source Sans Pro"),
-    heading_font = font_google("Poppins"),
-    code_font = font_google("Fira Code"),
-    "navbar-bg" = "#2c3e50"
-  ),
+    bootswatch = "default",
+    primary = "#0071e3",
+    secondary = "#86868b",
+    success = "#34c759",
+    info = "#5ac8fa",
+    warning = "#ff9f0a",
+    danger = "#ff3b30",
+    base_font = font_google("Inter"),
+    heading_font = font_google("Inter"),
+    code_font = font_google("JetBrains Mono"),
+    "body-bg" = "#f5f5f7",
+    "card-bg" = "#ffffff",
+    "border-radius" = "12px"
+  ) |> bs_add_rules(sass::sass_file("www/styles.css")),
 
   # Sidebar with data and model controls
   sidebar = sidebar(
@@ -221,7 +222,6 @@ ui <- page_sidebar(
 
         card(
           card_header(
-            class = "bg-primary text-white",
             "Dataset Overview"
           ),
           card_body(
@@ -276,7 +276,6 @@ ui <- page_sidebar(
         # Left: Tree Visualization
         card(
           card_header(
-            class = "bg-primary text-white",
             "Decision Tree Visualization"
           ),
           card_body(
@@ -300,12 +299,12 @@ ui <- page_sidebar(
         # Right: AI Chat
         card(
           card_header(
-            class = "bg-secondary text-white d-flex justify-content-between align-items-center",
+            class = "d-flex justify-content-between align-items-center",
             span("AI Interpretation"),
             actionButton(
               "clear_chat",
               "Clear",
-              class = "btn-sm btn-outline-light",
+              class = "btn-sm btn-outline-secondary",
               icon = icon("trash")
             )
           ),
@@ -376,7 +375,7 @@ ui <- page_sidebar(
           col_widths = c(12),
 
           card(
-            card_header(class = "bg-primary text-white", "Model Statistics"),
+            card_header("Model Statistics"),
             card_body(
               conditionalPanel(
                 condition = "output.model_built",
@@ -390,7 +389,7 @@ ui <- page_sidebar(
           ),
 
           card(
-            card_header(class = "bg-primary text-white", "Variable Importance"),
+            card_header("Variable Importance"),
             card_body(
               conditionalPanel(
                 condition = "output.model_built",
@@ -404,7 +403,7 @@ ui <- page_sidebar(
           ),
 
           card(
-            card_header(class = "bg-primary text-white", "Confusion Matrix"),
+            card_header("Confusion Matrix"),
             card_body(
               conditionalPanel(
                 condition = "output.model_built",
@@ -423,14 +422,14 @@ ui <- page_sidebar(
           col_widths = c(12),
 
           card(
-            card_header(class = "bg-secondary text-white", "Tree Rules"),
+            card_header("Tree Rules"),
             card_body(
               verbatimTextOutput("tree_rules")
             )
           ),
 
           card(
-            card_header(class = "bg-secondary text-white", "CP Table"),
+            card_header("CP Table"),
             card_body(
               DTOutput("cp_table")
             )
