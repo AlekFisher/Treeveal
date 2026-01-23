@@ -1,6 +1,6 @@
 /* ============================================================================
-  Treeveal Custom Styles
-A sophisticated, minimalist design inspired by Apple's design language
+   Treeveal Custom Styles
+   A sophisticated, minimalist design inspired by Apple's design language
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -253,6 +253,10 @@ p {
 
 .bslib-value-box.bg-success {
   background: linear-gradient(135deg, #e8f9ed 0%, #ffffff 100%) !important;
+}
+
+.bslib-value-box.bg-info {
+  background: linear-gradient(135deg, #e8f4fd 0%, #ffffff 100%) !important;
 }
 
 /* ----------------------------------------------------------------------------
@@ -676,6 +680,132 @@ pre {
 .shiny-plot-output {
   border-radius: var(--radius-sm);
   overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   Guide Tab Styles
+   ---------------------------------------------------------------------------- */
+#guide_accordion {
+  --bs-accordion-border-color: var(--border-light);
+  --bs-accordion-btn-padding-x: 1rem;
+  --bs-accordion-btn-padding-y: 1rem;
+  --bs-accordion-body-padding-x: 1rem;
+  --bs-accordion-body-padding-y: 1rem;
+}
+
+#guide_accordion .accordion-item {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md) !important;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+#guide_accordion .accordion-button {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md) !important;
+}
+
+#guide_accordion .accordion-button:not(.collapsed) {
+  background: var(--bg-tertiary);
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+#guide_accordion .accordion-body {
+  background: var(--bg-primary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+#guide_accordion .accordion-body p {
+  color: var(--color-primary-light);
+}
+
+#guide_accordion .accordion-body .lead {
+  font-size: 1rem;
+  color: var(--color-primary);
+}
+
+/* Step numbers in guide */
+.step-number {
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+/* Definition list in glossary */
+#guide_accordion dl {
+  margin-bottom: 0;
+}
+
+#guide_accordion dt {
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  margin-top: 0.75rem;
+}
+
+#guide_accordion dt:first-child {
+  margin-top: 0;
+}
+
+#guide_accordion dd {
+  margin-left: 0;
+  margin-bottom: 0;
+  font-size: 0.8125rem;
+}
+
+/* Tables in guide */
+#guide_accordion .table {
+  font-size: 0.8125rem;
+  margin-bottom: 0;
+}
+
+#guide_accordion .table th {
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-secondary);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0.5rem;
+  background: transparent;
+}
+
+#guide_accordion .table td {
+  padding: 0.5rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Alerts in guide */
+#guide_accordion .alert {
+  padding: 0.75rem;
+  margin-bottom: 0;
+}
+
+.guide-list {
+  padding-left: 1.25rem;
+}
+
+.guide-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  color: var(--color-primary-light);
+}
+
+.guide-list li strong {
+  color: var(--color-primary);
 }
 
 /* ----------------------------------------------------------------------------

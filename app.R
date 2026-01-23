@@ -11,6 +11,8 @@ library(DT)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(readxl)
+library(haven)
 
 # ============================================================================
 # PRODUCTION MODE TOGGLE
@@ -75,9 +77,20 @@ ui <- page_sidebar(
 
         fileInput(
           "data_file",
-          "Upload Dataset (CSV)",
-          accept = c(".csv", ".CSV"),
-          placeholder = "Choose a CSV file..."
+          "Upload Dataset",
+          accept = c(".csv", ".CSV", ".xlsx", ".xls", ".sav", ".rds", ".RData", ".rda"),
+          placeholder = "CSV, Excel, SPSS, or R files..."
+        ),
+
+        fileInput(
+          "dict_file",
+          "Upload Data Dictionary (Optional)",
+          accept = c(".csv", ".CSV", ".xlsx", ".xls"),
+          placeholder = "Variable labels & descriptions..."
+        ),
+        helpText(
+          class = "small",
+          "Dictionary should have columns: variable, label, and optionally notes"
         ),
 
         checkboxInput("use_demo", "Use Demo Dataset (HCP GLP-1 Prescribing)", value = FALSE),
@@ -120,8 +133,8 @@ ui <- page_sidebar(
         sliderInput(
           "minbucket",
           "Minimum Bucket Size",
-          min = 15,
-          max = 100,
+          min = 1,
+          max = 50,
           value = 30,
           step = 1
         ),
@@ -132,7 +145,7 @@ ui <- page_sidebar(
           "Maximum Depth",
           min = 1,
           max = 30,
-          value = 10,
+          value = 4,
           step = 1
         ),
 
@@ -231,13 +244,13 @@ ui <- page_sidebar(
                 class = "text-center py-5",
                 bsicons::bs_icon("cloud-upload", size = "4rem", class = "text-muted"),
                 h4(class = "text-muted mt-3", "Upload a dataset to begin"),
-                p(class = "text-muted", "CSV files with headers are supported")
+                p(class = "text-muted", "Supported formats: CSV, Excel (.xlsx, .xls), SPSS (.sav), R (.rds, .RData)")
               )
             ),
             conditionalPanel(
               condition = "output.data_loaded",
               layout_columns(
-                col_widths = c(4, 4, 4),
+                col_widths = c(3, 3, 3, 3),
                 value_box(
                   title = "Observations",
                   value = textOutput("n_rows", inline = TRUE),
@@ -255,6 +268,12 @@ ui <- page_sidebar(
                   value = textOutput("complete_cases", inline = TRUE),
                   showcase = bsicons::bs_icon("check-circle"),
                   theme = "success"
+                ),
+                value_box(
+                  title = "Dictionary Labels",
+                  value = textOutput("n_dict_labels", inline = TRUE),
+                  showcase = bsicons::bs_icon("journal-text"),
+                  theme = "info"
                 )
               ),
               hr(),
@@ -309,7 +328,8 @@ ui <- page_sidebar(
             )
           ),
           card_body(
-            min_height = "600px",
+            class = "d-flex flex-column",
+            style = "height: 600px; padding: 1rem;",
 
             conditionalPanel(
               condition = "!output.model_built",
@@ -323,37 +343,50 @@ ui <- page_sidebar(
 
             conditionalPanel(
               condition = "output.model_built",
+              class = "d-flex flex-column flex-grow-1",
+              style = "min-height: 0;",
 
-              # Chat history display
+              # Chat history display - takes up remaining space
               div(
                 id = "chat_container",
-                style = "height: 380px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; background-color: #f8f9fa;",
+                class = "flex-grow-1",
+                style = "overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #f8f9fa; min-height: 0;",
                 uiOutput("chat_history")
               ),
 
-              # Quick action buttons
+              # Quick action buttons - fixed at bottom
               div(
-                class = "mb-2",
+                class = "mt-2 mb-2 flex-shrink-0",
                 actionButton("ask_interpret", "Interpret", class = "btn-outline-primary btn-sm me-1", icon = icon("lightbulb")),
                 actionButton("ask_insights", "Insights", class = "btn-outline-primary btn-sm me-1", icon = icon("chart-line")),
                 actionButton("ask_recommendations", "Recommend", class = "btn-outline-primary btn-sm me-1", icon = icon("list-check")),
                 actionButton("ask_limitations", "Limits", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
               ),
 
-              # User input
-              layout_columns(
-                col_widths = c(9, 3),
-                textAreaInput(
-                  "user_message",
-                  NULL,
-                  placeholder = "Ask about your tree...",
-                  rows = 2
+              # User input - fixed at bottom
+              div(
+                class = "flex-shrink-0",
+                layout_columns(
+                  col_widths = c(9, 3),
+                  textAreaInput(
+                    "user_message",
+                    NULL,
+                    placeholder = "Ask about your tree...",
+                    rows = 2
+                  ),
+                  actionButton(
+                    "send_message",
+                    "Send",
+                    class = "btn-primary w-100 h-100",
+                    icon = icon("paper-plane")
+                  )
                 ),
-                actionButton(
-                  "send_message",
-                  "Send",
-                  class = "btn-primary w-100 h-100",
-                  icon = icon("paper-plane")
+                # AI Disclaimer
+                p(
+                  class = "text-muted small mt-2 mb-0",
+                  style = "font-size: 0.75rem; line-height: 1.3;",
+                  bsicons::bs_icon("info-circle", class = "me-1"),
+                  "AI can make mistakes. Always verify interpretations against the actual model output and use professional judgment."
                 )
               )
             )
@@ -436,6 +469,262 @@ ui <- page_sidebar(
           )
         )
       )
+    ),
+
+    # Guide & Glossary Tab
+    nav_panel(
+      title = "Guide",
+      icon = bsicons::bs_icon("book"),
+
+      card(
+        card_body(
+          class = "p-4",
+
+          div(
+            class = "mb-4",
+            h4("Treeveal User Guide"),
+            p(class = "text-muted", "Everything you need to know about decision trees and how to use this app.")
+          ),
+
+          accordion(
+            id = "guide_accordion",
+            open = FALSE,
+
+            # What is a Decision Tree
+            accordion_panel(
+              title = "What is a Decision Tree?",
+              value = "what_is",
+              icon = bsicons::bs_icon("diagram-3"),
+
+              p(
+                class = "lead",
+                "A decision tree is a visual tool that shows how different factors lead to an outcome.
+                Think of it like a flowchart that asks yes/no questions to arrive at a prediction."
+              ),
+              h6("A Simple Example"),
+              p(
+                "Imagine predicting whether an HCP is a high prescriber of GLP-1 medications.
+                The tree might work like this:"
+              ),
+              div(
+                class = "p-3 my-3",
+                style = "background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--color-accent);",
+                tags$ol(
+                  tags$li("Is the physician comfortable initiating GLP-1s? (rating ≥ 4)"),
+                  tags$ul(
+                    tags$li(tags$strong("Yes →"), " Are they an Endocrinologist?"),
+                    tags$ul(
+                      tags$li(tags$strong("Yes →"), " Likely a High Prescriber (85% probability)"),
+                      tags$li(tags$strong("No →"), " Check if they believe in early intervention...")
+                    ),
+                    tags$li(tags$strong("No →"), " Likely a Low Prescriber (72% probability)")
+                  )
+                )
+              ),
+              p(
+                "Each \"branch\" represents a question about the data. The tree automatically finds
+                the questions that best separate high prescribers from low prescribers."
+              )
+            ),
+
+            # When to Use
+            accordion_panel(
+              title = "When to Use Decision Trees",
+              value = "when_to_use",
+              icon = bsicons::bs_icon("check-circle"),
+
+              layout_columns(
+                col_widths = c(6, 6),
+
+                div(
+                  h6(class = "text-success", "Great For"),
+                  tags$ul(
+                    tags$li(tags$strong("Segmentation:"), " Understanding what differentiates groups"),
+                    tags$li(tags$strong("Identifying key drivers:"), " Finding which factors matter most"),
+                    tags$li(tags$strong("Creating actionable rules:"), " \"If X and Y, then likely Z\""),
+                    tags$li(tags$strong("Communicating findings:"), " Visual output stakeholders understand"),
+                    tags$li(tags$strong("Exploratory analysis:"), " Discovering unexpected patterns")
+                  )
+                ),
+
+                div(
+                  h6(class = "text-danger", "Limitations"),
+                  tags$ul(
+                    tags$li(tags$strong("Overfitting risk:"), " Trees can memorize noise if too complex"),
+                    tags$li(tags$strong("Instability:"), " Small data changes can produce different trees"),
+                    tags$li(tags$strong("Linear relationships:"), " May miss smooth, gradual effects"),
+                    tags$li(tags$strong("Sample size:"), " Needs enough data in each segment")
+                  )
+                )
+              )
+            ),
+
+            # How to Use This App
+            accordion_panel(
+              title = "How to Use This App",
+              value = "how_to_use",
+              icon = bsicons::bs_icon("play-circle"),
+
+              div(
+                class = "step-item d-flex mb-3",
+                div(class = "step-number me-3", "1"),
+                div(
+                  tags$strong("Upload Your Data"),
+                  p(class = "text-muted mb-0 small", "Use a CSV file or try the demo dataset to explore.")
+                )
+              ),
+
+              div(
+                class = "step-item d-flex mb-3",
+                div(class = "step-number me-3", "2"),
+                div(
+                  tags$strong("Select Your Variables"),
+                  p(class = "text-muted mb-0 small",
+                    "Outcome = what you're predicting. Predictors = factors that might influence it.")
+                )
+              ),
+
+              div(
+                class = "step-item d-flex mb-3",
+                div(class = "step-number me-3", "3"),
+                div(
+                  tags$strong("Adjust Parameters (Optional)"),
+                  p(class = "text-muted mb-0 small", "Defaults work well. Adjust if tree is too simple or complex.")
+                )
+              ),
+
+              div(
+                class = "step-item d-flex",
+                div(class = "step-number me-3", "4"),
+                div(
+                  tags$strong("Build & Interpret"),
+                  p(class = "text-muted mb-0 small", "Click 'Build Decision Tree' and use the AI to help interpret.")
+                )
+              )
+            ),
+
+            # Parameter Guide
+            accordion_panel(
+              title = "Parameter Guide",
+              value = "parameters",
+              icon = bsicons::bs_icon("sliders"),
+
+              tags$table(
+                class = "table table-sm",
+                tags$thead(
+                  tags$tr(
+                    tags$th("Parameter"),
+                    tags$th("What It Does"),
+                    tags$th("When to Adjust")
+                  )
+                ),
+                tags$tbody(
+                  tags$tr(
+                    tags$td(tags$strong("Complexity (cp)")),
+                    tags$td("Controls tree simplicity. Lower = more complex."),
+                    tags$td("Raise if too complex, lower if too simple.")
+                  ),
+                  tags$tr(
+                    tags$td(tags$strong("Min Bucket")),
+                    tags$td("Minimum observations in final groups."),
+                    tags$td("Raise for more reliable segments.")
+                  ),
+                  tags$tr(
+                    tags$td(tags$strong("Max Depth")),
+                    tags$td("Maximum levels of questions."),
+                    tags$td("Lower (3-5) for simpler trees.")
+                  )
+                )
+              ),
+              div(
+                class = "alert alert-info mt-2 small",
+                bsicons::bs_icon("lightbulb", class = "me-2"),
+                "Start with defaults. Adjust only if your tree has 1-2 splits (lower cp) or 20+ splits (raise cp)."
+              )
+            ),
+
+            # How to Read the Tree
+            accordion_panel(
+              title = "How to Read the Tree",
+              value = "reading",
+              icon = bsicons::bs_icon("eye"),
+
+              p("Each box in the tree contains:"),
+              tags$ul(
+                tags$li(tags$strong("Top line:"), " The predicted class (e.g., \"High\" or \"Low\")"),
+                tags$li(tags$strong("Percentages:"), " Probability of each class"),
+                tags$li(tags$strong("Bottom %:"), " What portion of data is in this node")
+              ),
+
+              h6(class = "mt-3", "Reading Splits"),
+              tags$ul(
+                tags$li(tags$strong("Yes/Left:"), " Observations meeting the condition go left"),
+                tags$li(tags$strong("No/Right:"), " Observations NOT meeting the condition go right")
+              ),
+
+              div(
+                class = "alert alert-warning mt-2 small",
+                bsicons::bs_icon("info-circle", class = "me-2"),
+                "Follow a path top-to-bottom to describe a segment: \"HCPs who are comfortable initiating AND believe in early intervention have 85% probability of being high prescribers.\""
+              )
+            ),
+
+            # Glossary
+            accordion_panel(
+              title = "Glossary",
+              value = "glossary",
+              icon = bsicons::bs_icon("journal-text"),
+
+              div(
+                class = "row",
+                div(
+                  class = "col-md-6",
+                  tags$dl(
+                    class = "small",
+                    tags$dt("Accuracy"),
+                    tags$dd(class = "text-muted", "Percentage of correct predictions."),
+
+                    tags$dt("Classification Tree"),
+                    tags$dd(class = "text-muted", "Predicts categories (High/Low, Yes/No)."),
+
+                    tags$dt("Confusion Matrix"),
+                    tags$dd(class = "text-muted", "Table of correct vs incorrect predictions."),
+
+                    tags$dt("CP (Complexity Parameter)"),
+                    tags$dd(class = "text-muted", "Controls tree pruning. Higher = simpler tree."),
+
+                    tags$dt("Leaf Node"),
+                    tags$dd(class = "text-muted", "Final box with prediction and segment size."),
+
+                    tags$dt("Overfitting"),
+                    tags$dd(class = "text-muted", "Tree too complex, learns noise not patterns.")
+                  )
+                ),
+                div(
+                  class = "col-md-6",
+                  tags$dl(
+                    class = "small",
+                    tags$dt("Predictor Variable"),
+                    tags$dd(class = "text-muted", "Factors used to make predictions."),
+
+                    tags$dt("Pruning"),
+                    tags$dd(class = "text-muted", "Removing branches to simplify the tree."),
+
+                    tags$dt("Root Node"),
+                    tags$dd(class = "text-muted", "First split; most important variable."),
+
+                    tags$dt("Split"),
+                    tags$dd(class = "text-muted", "Decision point dividing data by a variable."),
+
+                    tags$dt("Variable Importance"),
+                    tags$dd(class = "text-muted", "Score of each variable's contribution.")
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
     )
   )
 )
@@ -452,6 +741,7 @@ server <- function(input, output, session) {
 
   rv <- reactiveValues(
     data = NULL,
+    data_dict = NULL,
     model = NULL,
     chat_history = list(),
     chat = NULL  # ellmer chat object
@@ -466,14 +756,152 @@ server <- function(input, output, session) {
     req(input$data_file)
 
     tryCatch({
-      rv$data <- read.csv(input$data_file$datapath, stringsAsFactors = TRUE)
+      file_path <- input$data_file$datapath
+      file_name <- input$data_file$name
+      file_ext <- tolower(tools::file_ext(file_name))
+
+      # Load data based on file extension
+      data <- switch(file_ext,
+                     "csv" = read.csv(file_path, stringsAsFactors = TRUE),
+                     "xlsx" = {
+                       df <- readxl::read_excel(file_path)
+                       # Convert character columns to factors
+                       df <- as.data.frame(df)
+                       df[] <- lapply(df, function(x) if (is.character(x)) as.factor(x) else x)
+                       df
+                     },
+                     "xls" = {
+                       df <- readxl::read_excel(file_path)
+                       df <- as.data.frame(df)
+                       df[] <- lapply(df, function(x) if (is.character(x)) as.factor(x) else x)
+                       df
+                     },
+                     "sav" = {
+                       df <- haven::read_sav(file_path)
+                       # Convert haven labelled columns to factors
+                       df <- as.data.frame(df)
+                       df[] <- lapply(df, function(x) {
+                         if (haven::is.labelled(x)) {
+                           as.factor(haven::as_factor(x))
+                         } else if (is.character(x)) {
+                           as.factor(x)
+                         } else {
+                           x
+                         }
+                       })
+                       df
+                     },
+                     "rds" = {
+                       df <- readRDS(file_path)
+                       if (!is.data.frame(df)) stop("RDS file must contain a data frame")
+                       df[] <- lapply(df, function(x) if (is.character(x)) as.factor(x) else x)
+                       df
+                     },
+                     "rdata" = ,
+                     "rda" = {
+                       # Load into temporary environment and extract first data frame
+                       temp_env <- new.env()
+                       load(file_path, envir = temp_env)
+                       objects <- ls(temp_env)
+                       df <- NULL
+                       for (obj_name in objects) {
+                         obj <- get(obj_name, envir = temp_env)
+                         if (is.data.frame(obj)) {
+                           df <- obj
+                           break
+                         }
+                       }
+                       if (is.null(df)) stop("No data frame found in RData file")
+                       df[] <- lapply(df, function(x) if (is.character(x)) as.factor(x) else x)
+                       df
+                     },
+                     stop(paste("Unsupported file type:", file_ext))
+      )
+
+      rv$data <- data
+      rv$data_dict <- NULL  # Clear dictionary when new data is loaded
       rv$model <- NULL
       rv$chat_history <- list()
       rv$chat <- NULL
 
-      showNotification("Data loaded successfully!", type = "message")
+      showNotification(
+        paste0("Data loaded successfully! (", file_ext, " file, ", nrow(data), " rows)"),
+        type = "message"
+      )
     }, error = function(e) {
       showNotification(paste("Error loading data:", e$message), type = "error")
+    })
+  })
+
+  # Load data dictionary
+  observeEvent(input$dict_file, {
+    req(input$dict_file)
+
+    tryCatch({
+      file_path <- input$dict_file$datapath
+      file_name <- input$dict_file$name
+      file_ext <- tolower(tools::file_ext(file_name))
+
+      # Load dictionary based on file extension
+      dict <- switch(file_ext,
+                     "csv" = read.csv(file_path, stringsAsFactors = FALSE),
+                     "xlsx" = as.data.frame(readxl::read_excel(file_path)),
+                     "xls" = as.data.frame(readxl::read_excel(file_path)),
+                     stop(paste("Unsupported dictionary file type:", file_ext))
+      )
+
+      # Standardize column names (flexible matching)
+      names(dict) <- tolower(names(dict))
+
+      # Map common column name variations
+      col_mapping <- list(
+        variable = c("variable", "var", "var_name", "varname", "name", "column", "col"),
+        label = c("label", "short_label", "short_label_raw", "description", "desc", "var_label", "varlabel"),
+        notes = c("notes", "note", "comments", "comment", "details", "detail", "context", "info")
+      )
+
+      # Find and rename columns
+      final_names <- names(dict)
+      for (target in names(col_mapping)) {
+        for (i in seq_along(final_names)) {
+          if (final_names[i] %in% col_mapping[[target]]) {
+            final_names[i] <- target
+            break
+          }
+        }
+      }
+      names(dict) <- final_names
+
+      # Validate required columns
+      if (!"variable" %in% names(dict)) {
+        stop("Dictionary must have a 'variable' column (or: var, var_name, name, column)")
+      }
+      if (!"label" %in% names(dict)) {
+        stop("Dictionary must have a 'label' column (or: description, desc, short_label)")
+      }
+
+      # Add notes column if missing
+      if (!"notes" %in% names(dict)) {
+        dict$notes <- NA_character_
+      }
+
+      # Keep only relevant columns
+      dict <- dict[, c("variable", "label", "notes")]
+
+      # Remove rows with missing variable names
+      dict <- dict[!is.na(dict$variable) & dict$variable != "", ]
+
+      rv$data_dict <- dict
+
+      # Reset chat when dictionary changes (so AI gets new context)
+      rv$chat <- NULL
+
+      showNotification(
+        paste0("Dictionary loaded! (", nrow(dict), " variable labels)"),
+        type = "message"
+      )
+    }, error = function(e) {
+      showNotification(paste("Error loading dictionary:", e$message), type = "error")
     })
   })
 
@@ -738,6 +1166,14 @@ server <- function(input, output, session) {
     paste0(pct, "%")
   })
 
+  output$n_dict_labels <- renderText({
+    if (is.null(rv$data_dict)) {
+      "None"
+    } else {
+      nrow(rv$data_dict)
+    }
+  })
+
   output$data_preview <- renderDT({
     req(rv$data)
     datatable(
@@ -859,6 +1295,31 @@ server <- function(input, output, session) {
   # AI Chat Functions
   # -------------------------------------------------------------------------
 
+  # Helper function to format data dictionary for AI
+  get_dictionary_context <- reactive({
+    if (is.null(rv$data_dict)) {
+      return(NULL)
+    }
+
+    dict <- rv$data_dict
+
+    # Format dictionary entries
+    dict_lines <- sapply(seq_len(nrow(dict)), function(i) {
+      line <- paste0("- ", dict$variable[i], ": ", dict$label[i])
+      if (!is.na(dict$notes[i]) && dict$notes[i] != "") {
+        line <- paste0(line, " [Note: ", dict$notes[i], "]")
+      }
+      line
+    })
+
+    paste0(
+      "\n\nDATA DICTIONARY\n",
+      "===============\n",
+      "The following variable labels explain what each variable measures:\n\n",
+      paste(dict_lines, collapse = "\n")
+    )
+  })
+
   # Helper function to get model description for AI
   get_model_context <- reactive({
     req(rv$model, rv$data, input$outcome_var)
@@ -866,14 +1327,25 @@ server <- function(input, output, session) {
     # Capture tree rules
     rules <- capture.output(rpart.rules(rv$model, style = "tall", cover = TRUE))
 
-    # Variable importance
+    # Variable importance - include labels if available
     var_imp <- if (!is.null(rv$model$variable.importance)) {
-      paste(
-        names(rv$model$variable.importance),
-        ":",
-        round(rv$model$variable.importance, 2),
-        collapse = "\n"
-      )
+      var_names <- names(rv$model$variable.importance)
+      var_scores <- round(rv$model$variable.importance, 2)
+
+      # Add labels if dictionary exists
+      if (!is.null(rv$data_dict)) {
+        var_labels <- sapply(var_names, function(v) {
+          match_idx <- match(v, rv$data_dict$variable)
+          if (!is.na(match_idx)) {
+            paste0(v, " (", rv$data_dict$label[match_idx], ")")
+          } else {
+            v
+          }
+        })
+        paste(var_labels, ":", var_scores, collapse = "\n")
+      } else {
+        paste(var_names, ":", var_scores, collapse = "\n")
+      }
     } else {
       "Not available"
     }
@@ -896,6 +1368,9 @@ server <- function(input, output, session) {
       )
     }
 
+    # Get dictionary context if available
+    dict_context <- get_dictionary_context()
+
     paste0(
       "DECISION TREE MODEL SUMMARY\n",
       "===========================\n\n",
@@ -909,7 +1384,8 @@ server <- function(input, output, session) {
       "\n\nModel Parameters:\n",
       "- Complexity Parameter (cp): ", input$cp, "\n",
       "- Minimum Bucket Size: ", input$minbucket, "\n",
-      "- Maximum Depth: ", input$maxdepth
+      "- Maximum Depth: ", input$maxdepth,
+      if (!is.null(dict_context)) dict_context else ""
     )
   })
 
@@ -928,8 +1404,11 @@ server <- function(input, output, session) {
         } else {
           ""
         },
-        "\n\nProvide clear, actionable insights. Use specific numbers from the model when relevant. ",
-        "Be conversational but precise. If the user asks about something not shown in the model, ",
+        "\n\nIMPORTANT INSTRUCTIONS:\n",
+        "- When discussing variables, ALWAYS use their descriptive labels (from the data dictionary) rather than raw variable names.\n",
+        "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'.\n",
+        "- Provide clear, actionable insights. Use specific numbers from the model when relevant.\n",
+        "- Be conversational but precise. If the user asks about something not shown in the model, ",
         "explain what additional analysis might be needed."
       )
 
