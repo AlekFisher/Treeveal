@@ -13,6 +13,10 @@ library(tidyr)
 library(ggplot2)
 library(readxl)
 library(haven)
+library(officer)
+library(randomForest)
+library(officer)
+library(rvg)
 
 # ============================================================================
 # PRODUCTION MODE TOGGLE
@@ -284,6 +288,151 @@ ui <- page_sidebar(
       )
     ),
 
+    # Data Quality Tab
+    nav_panel(
+      title = "Data Quality",
+      icon = bsicons::bs_icon("clipboard-check"),
+
+      conditionalPanel(
+        condition = "!output.data_loaded",
+        card(
+          card_body(
+            div(
+              class = "text-center py-5",
+              bsicons::bs_icon("clipboard-check", size = "4rem", class = "text-muted"),
+              h4(class = "text-muted mt-3", "Upload data to see quality checks"),
+              p(class = "text-muted", "Data validation will appear here after you upload a dataset")
+            )
+          )
+        )
+      ),
+
+      conditionalPanel(
+        condition = "output.data_loaded",
+
+        layout_columns(
+          col_widths = c(12),
+
+          # Summary card
+          card(
+            card_body(
+              class = "p-3",
+              layout_columns(
+                col_widths = c(3, 3, 3, 3),
+                value_box(
+                  title = "Ready for Analysis",
+                  value = textOutput("dq_ready_vars", inline = TRUE),
+                  showcase = bsicons::bs_icon("check-circle"),
+                  theme = "success",
+                  height = "120px"
+                ),
+                value_box(
+                  title = "Warnings",
+                  value = textOutput("dq_warning_vars", inline = TRUE),
+                  showcase = bsicons::bs_icon("exclamation-triangle"),
+                  theme = "warning",
+                  height = "120px"
+                ),
+                value_box(
+                  title = "Issues",
+                  value = textOutput("dq_issue_vars", inline = TRUE),
+                  showcase = bsicons::bs_icon("x-circle"),
+                  theme = "danger",
+                  height = "120px"
+                ),
+                value_box(
+                  title = "Overall Status",
+                  value = textOutput("dq_overall_status", inline = TRUE),
+                  showcase = bsicons::bs_icon("speedometer2"),
+                  theme = "info",
+                  height = "120px"
+                )
+              )
+            )
+          )
+        ),
+
+        layout_columns(
+          col_widths = c(6, 6),
+
+          # Variable Quality Table
+          card(
+            card_header("Variable Quality Summary"),
+            card_body(
+              p(class = "text-muted small", "Click a row to see details. Variables are flagged based on missingness, variance, and data type."),
+              DTOutput("dq_variable_table")
+            )
+          ),
+
+          # Issue Details
+          card(
+            card_header("Quality Check Details"),
+            card_body(
+              accordion(
+                id = "dq_accordion",
+                open = FALSE,
+
+                accordion_panel(
+                  title = "Missing Data",
+                  value = "missing",
+                  icon = bsicons::bs_icon("question-circle"),
+                  p(class = "small text-muted", "Variables with missing values. High missingness (>50%) may indicate skip logic or data collection issues."),
+                  DTOutput("dq_missing_table")
+                ),
+
+                accordion_panel(
+                  title = "Low Variance",
+                  value = "variance",
+                  icon = bsicons::bs_icon("dash-circle"),
+                  p(class = "small text-muted", "Variables with very low variance won't contribute meaningful splits. Consider excluding near-constant variables."),
+                  DTOutput("dq_variance_table")
+                ),
+
+                accordion_panel(
+                  title = "Outcome Variable Check",
+                  value = "outcome",
+                  icon = bsicons::bs_icon("bullseye"),
+                  p(class = "small text-muted", "Assessment of your selected outcome variable for decision tree suitability."),
+                  uiOutput("dq_outcome_check")
+                ),
+
+                accordion_panel(
+                  title = "Sample Size",
+                  value = "sample",
+                  icon = bsicons::bs_icon("people"),
+                  p(class = "small text-muted", "Minimum recommended sample sizes for reliable decision tree analysis."),
+                  uiOutput("dq_sample_check")
+                ),
+
+                accordion_panel(
+                  title = "High Correlation",
+                  value = "correlation",
+                  icon = bsicons::bs_icon("link-45deg"),
+                  p(class = "small text-muted", "Highly correlated predictors. Common in attitudinal data - not necessarily a problem, but good to be aware of."),
+                  DTOutput("dq_correlation_table")
+                )
+              )
+            )
+          )
+        ),
+
+        # Recommendations
+        layout_columns(
+          col_widths = c(12),
+          card(
+            card_header(
+              class = "d-flex align-items-center",
+              bsicons::bs_icon("lightbulb", class = "me-2"),
+              "Recommendations"
+            ),
+            card_body(
+              uiOutput("dq_recommendations")
+            )
+          )
+        )
+      )
+    ),
+
     # Decision Tree Tab (with AI Chat)
     nav_panel(
       title = "Decision Tree",
@@ -295,7 +444,17 @@ ui <- page_sidebar(
         # Left: Tree Visualization
         card(
           card_header(
-            "Decision Tree Visualization"
+            class = "d-flex justify-content-between align-items-center",
+            span("Decision Tree Visualization"),
+            conditionalPanel(
+              condition = "output.model_built",
+              downloadButton(
+                "export_pptx",
+                "Export",
+                class = "btn-sm btn-outline-primary",
+                icon = icon("file-powerpoint")
+              )
+            )
           ),
           card_body(
             min_height = "600px",
@@ -455,16 +614,40 @@ ui <- page_sidebar(
           col_widths = c(12),
 
           card(
-            card_header("Tree Rules"),
+            card_header(
+              class = "d-flex align-items-center",
+              "Random Forest Importance",
+              tags$span(
+                class = "ms-2 badge bg-secondary",
+                style = "font-weight: normal; font-size: 0.7em;",
+                "Validation"
+              )
+            ),
             card_body(
-              verbatimTextOutput("tree_rules")
+              conditionalPanel(
+                condition = "output.model_built",
+                p(class = "text-muted small", "Random Forest provides a complementary importance measure based on 500 trees. Variables important in both methods are more reliably predictive."),
+                plotOutput("rf_importance", height = "280px")
+              ),
+              conditionalPanel(
+                condition = "!output.model_built",
+                div(class = "text-center py-3 text-muted", "Build a model to see Random Forest importance")
+              )
             )
           ),
 
           card(
-            card_header("CP Table"),
+            card_header("Importance Comparison"),
             card_body(
-              DTOutput("cp_table")
+              conditionalPanel(
+                condition = "output.model_built",
+                p(class = "text-muted small", "Side-by-side comparison of variable rankings from both methods."),
+                DTOutput("importance_comparison")
+              ),
+              conditionalPanel(
+                condition = "!output.model_built",
+                div(class = "text-center py-3 text-muted", "Build a model to compare importance")
+              )
             )
           )
         )
@@ -1188,6 +1371,498 @@ server <- function(input, output, session) {
   })
 
   # -------------------------------------------------------------------------
+  # Outputs - Data Quality
+  # -------------------------------------------------------------------------
+
+  # Reactive to compute all data quality metrics
+  data_quality <- reactive({
+    req(rv$data)
+
+    df <- rv$data
+    n_obs <- nrow(df)
+    n_vars <- ncol(df)
+
+    # --- Missing Data Analysis ---
+    missing_info <- data.frame(
+      Variable = names(df),
+      N_Missing = sapply(df, function(x) sum(is.na(x))),
+      Pct_Missing = sapply(df, function(x) round(sum(is.na(x)) / length(x) * 100, 1)),
+      stringsAsFactors = FALSE
+    )
+    missing_info$Status <- case_when(
+      missing_info$Pct_Missing == 0 ~ "OK",
+      missing_info$Pct_Missing < 20 ~ "Low",
+      missing_info$Pct_Missing < 50 ~ "Moderate",
+      TRUE ~ "High"
+    )
+
+    # --- Variance Analysis ---
+    variance_info <- data.frame(
+      Variable = names(df),
+      stringsAsFactors = FALSE
+    )
+
+    variance_info$Type <- sapply(df, function(x) {
+      if (is.factor(x) || is.character(x)) "Categorical"
+      else if (is.numeric(x)) "Numeric"
+      else "Other"
+    })
+
+    variance_info$Unique_Values <- sapply(df, function(x) length(unique(na.omit(x))))
+
+    variance_info$Variance_Status <- sapply(seq_len(ncol(df)), function(i) {
+      x <- df[[i]]
+      x <- na.omit(x)
+      if (length(x) == 0) return("No Data")
+
+      n_unique <- length(unique(x))
+
+      if (n_unique == 1) return("Constant")
+
+      if (is.numeric(x)) {
+        # Check if >95% of values are the same
+        most_common_pct <- max(table(x)) / length(x)
+        if (most_common_pct > 0.95) return("Near-Constant")
+      } else {
+        # For categorical: check if one level dominates
+        most_common_pct <- max(table(x)) / length(x)
+        if (most_common_pct > 0.95) return("Near-Constant")
+      }
+
+      return("OK")
+    })
+
+    # --- Correlation Analysis (numeric variables only) ---
+    numeric_vars <- names(df)[sapply(df, is.numeric)]
+    high_corr <- data.frame(Var1 = character(), Var2 = character(), Correlation = numeric(), stringsAsFactors = FALSE)
+
+    if (length(numeric_vars) >= 2) {
+      numeric_df <- df[, numeric_vars, drop = FALSE]
+      # Use pairwise complete observations
+      cor_matrix <- tryCatch({
+        cor(numeric_df, use = "pairwise.complete.obs")
+      }, error = function(e) NULL)
+
+      if (!is.null(cor_matrix)) {
+        for (i in 1:(ncol(cor_matrix) - 1)) {
+          for (j in (i + 1):ncol(cor_matrix)) {
+            if (!is.na(cor_matrix[i, j]) && abs(cor_matrix[i, j]) > 0.8) {
+              high_corr <- rbind(high_corr, data.frame(
+                Var1 = numeric_vars[i],
+                Var2 = numeric_vars[j],
+                Correlation = round(cor_matrix[i, j], 3),
+                stringsAsFactors = FALSE
+              ))
+            }
+          }
+        }
+      }
+    }
+
+    # --- Variable Summary ---
+    var_summary <- merge(missing_info, variance_info, by = "Variable")
+    var_summary$Overall_Status <- case_when(
+      var_summary$Variance_Status == "Constant" ~ "Issue",
+      var_summary$Variance_Status == "No Data" ~ "Issue",
+      var_summary$Pct_Missing > 50 ~ "Warning",
+      var_summary$Variance_Status == "Near-Constant" ~ "Warning",
+      var_summary$Pct_Missing > 20 ~ "Warning",
+      TRUE ~ "OK"
+    )
+
+    # Add labels from dictionary if available
+    if (!is.null(rv$data_dict)) {
+      var_summary$Label <- sapply(var_summary$Variable, function(v) {
+        match_idx <- match(v, rv$data_dict$variable)
+        if (!is.na(match_idx)) rv$data_dict$label[match_idx] else ""
+      })
+    } else {
+      var_summary$Label <- ""
+    }
+
+    # --- Counts ---
+    n_ok <- sum(var_summary$Overall_Status == "OK")
+    n_warning <- sum(var_summary$Overall_Status == "Warning")
+    n_issue <- sum(var_summary$Overall_Status == "Issue")
+
+    list(
+      missing = missing_info,
+      variance = variance_info,
+      correlation = high_corr,
+      summary = var_summary,
+      n_ok = n_ok,
+      n_warning = n_warning,
+      n_issue = n_issue,
+      n_obs = n_obs,
+      n_vars = n_vars
+    )
+  })
+
+  # Summary value boxes
+  output$dq_ready_vars <- renderText({
+    req(data_quality())
+    data_quality()$n_ok
+  })
+
+  output$dq_warning_vars <- renderText({
+    req(data_quality())
+    data_quality()$n_warning
+  })
+
+  output$dq_issue_vars <- renderText({
+    req(data_quality())
+    data_quality()$n_issue
+  })
+
+  output$dq_overall_status <- renderText({
+    req(data_quality())
+    dq <- data_quality()
+    if (dq$n_issue > 0) {
+      "Review Needed"
+    } else if (dq$n_warning > 3) {
+      "Some Concerns"
+    } else {
+      "Good"
+    }
+  })
+
+  # Variable quality table
+  output$dq_variable_table <- renderDT({
+    req(data_quality())
+
+    df <- data_quality()$summary
+    df <- df[, c("Variable", "Label", "Type", "Pct_Missing", "Unique_Values", "Overall_Status")]
+    names(df) <- c("Variable", "Label", "Type", "% Missing", "Unique", "Status")
+
+    datatable(
+      df,
+      options = list(
+        pageLength = 15,
+        dom = 'frtip',
+        scrollX = TRUE,
+        order = list(list(5, 'desc'))  # Sort by status
+      ),
+      class = 'compact stripe hover',
+      selection = 'single'
+    ) |>
+      formatStyle(
+        'Status',
+        backgroundColor = styleEqual(
+          c('OK', 'Warning', 'Issue'),
+          c('#e8f9ed', '#fff8e8', '#ffe8e8')
+        ),
+        fontWeight = 'bold'
+      )
+  })
+
+  # Missing data table
+  output$dq_missing_table <- renderDT({
+    req(data_quality())
+
+    df <- data_quality()$missing
+    df <- df[df$Pct_Missing > 0, ]
+    df <- df[order(-df$Pct_Missing), ]
+
+    if (nrow(df) == 0) {
+      return(datatable(data.frame(Message = "No missing data found"), options = list(dom = 't')))
+    }
+
+    names(df) <- c("Variable", "N Missing", "% Missing", "Status")
+
+    datatable(
+      df,
+      options = list(pageLength = 10, dom = 'tip'),
+      class = 'compact stripe'
+    ) |>
+      formatStyle(
+        'Status',
+        backgroundColor = styleEqual(
+          c('OK', 'Low', 'Moderate', 'High'),
+          c('#e8f9ed', '#e8f9ed', '#fff8e8', '#ffe8e8')
+        )
+      )
+  })
+
+  # Low variance table
+  output$dq_variance_table <- renderDT({
+    req(data_quality())
+
+    df <- data_quality()$variance
+    df <- df[df$Variance_Status != "OK", ]
+
+    if (nrow(df) == 0) {
+      return(datatable(data.frame(Message = "All variables have adequate variance"), options = list(dom = 't')))
+    }
+
+    names(df) <- c("Variable", "Type", "Unique Values", "Status")
+
+    datatable(
+      df,
+      options = list(pageLength = 10, dom = 'tip'),
+      class = 'compact stripe'
+    ) |>
+      formatStyle(
+        'Status',
+        backgroundColor = styleEqual(
+          c('OK', 'Near-Constant', 'Constant', 'No Data'),
+          c('#e8f9ed', '#fff8e8', '#ffe8e8', '#ffe8e8')
+        )
+      )
+  })
+
+  # Correlation table
+  output$dq_correlation_table <- renderDT({
+    req(data_quality())
+
+    df <- data_quality()$correlation
+
+    if (nrow(df) == 0) {
+      return(datatable(data.frame(Message = "No highly correlated pairs found (r > 0.8)"), options = list(dom = 't')))
+    }
+
+    df <- df[order(-abs(df$Correlation)), ]
+
+    datatable(
+      df,
+      options = list(pageLength = 10, dom = 'tip'),
+      class = 'compact stripe'
+    )
+  })
+
+  # Outcome variable check
+  output$dq_outcome_check <- renderUI({
+    req(rv$data, input$outcome_var)
+
+    outcome <- rv$data[[input$outcome_var]]
+    n_obs <- length(outcome)
+    n_missing <- sum(is.na(outcome))
+    n_complete <- n_obs - n_missing
+
+    checks <- list()
+
+    if (is.factor(outcome) || is.character(outcome)) {
+      # Classification
+      levels_tbl <- table(outcome)
+      n_levels <- length(levels_tbl)
+      min_level_n <- min(levels_tbl)
+      min_level_pct <- round(min(levels_tbl) / sum(levels_tbl) * 100, 1)
+
+      checks$type <- list(
+        status = "OK",
+        text = paste0("Classification outcome with ", n_levels, " levels")
+      )
+
+      if (n_levels < 2) {
+        checks$levels <- list(status = "Issue", text = "Only 1 level - cannot build classifier")
+      } else if (n_levels > 10) {
+        checks$levels <- list(status = "Warning", text = paste0(n_levels, " levels - consider grouping for interpretability"))
+      } else {
+        checks$levels <- list(status = "OK", text = paste0(n_levels, " levels"))
+      }
+
+      if (min_level_pct < 5) {
+        checks$balance <- list(status = "Warning", text = paste0("Smallest class has only ", min_level_pct, "% of cases (n=", min_level_n, ")"))
+      } else if (min_level_pct < 10) {
+        checks$balance <- list(status = "OK", text = paste0("Minor imbalance - smallest class: ", min_level_pct, "%"))
+      } else {
+        checks$balance <- list(status = "OK", text = paste0("Balanced classes - smallest: ", min_level_pct, "%"))
+      }
+
+    } else if (is.numeric(outcome)) {
+      # Regression
+      checks$type <- list(status = "OK", text = "Regression outcome (continuous)")
+
+      n_unique <- length(unique(na.omit(outcome)))
+      if (n_unique < 5) {
+        checks$levels <- list(status = "Warning", text = paste0("Only ", n_unique, " unique values - consider treating as categorical"))
+      } else {
+        checks$levels <- list(status = "OK", text = paste0(n_unique, " unique values"))
+      }
+
+      checks$balance <- list(status = "OK", text = "N/A for regression")
+    }
+
+    # Missing check
+    if (n_missing > 0) {
+      pct_missing <- round(n_missing / n_obs * 100, 1)
+      if (pct_missing > 20) {
+        checks$missing <- list(status = "Warning", text = paste0(pct_missing, "% missing values in outcome"))
+      } else {
+        checks$missing <- list(status = "OK", text = paste0(pct_missing, "% missing (will be excluded)"))
+      }
+    } else {
+      checks$missing <- list(status = "OK", text = "No missing values")
+    }
+
+    # Build UI
+    check_items <- lapply(names(checks), function(nm) {
+      check <- checks[[nm]]
+      icon_name <- switch(check$status,
+                          "OK" = "check-circle",
+                          "Warning" = "exclamation-triangle",
+                          "Issue" = "x-circle"
+      )
+      icon_color <- switch(check$status,
+                           "OK" = "text-success",
+                           "Warning" = "text-warning",
+                           "Issue" = "text-danger"
+      )
+      div(
+        class = "d-flex align-items-center mb-2",
+        bsicons::bs_icon(icon_name, class = paste("me-2", icon_color)),
+        span(check$text)
+      )
+    })
+
+    div(
+      h6(paste0("Outcome: ", input$outcome_var)),
+      tagList(check_items)
+    )
+  })
+
+  # Sample size check
+  output$dq_sample_check <- renderUI({
+    req(rv$data, input$outcome_var, input$predictor_vars)
+
+    n_obs <- nrow(rv$data)
+    n_predictors <- length(input$predictor_vars)
+    outcome <- rv$data[[input$outcome_var]]
+
+    checks <- list()
+
+    # Overall sample size
+    if (n_obs < 100) {
+      checks$overall <- list(status = "Warning", text = paste0("Small sample (n=", n_obs, ") - tree may be unstable"))
+    } else if (n_obs < 200) {
+      checks$overall <- list(status = "OK", text = paste0("Adequate sample (n=", n_obs, ")"))
+    } else {
+      checks$overall <- list(status = "OK", text = paste0("Good sample size (n=", n_obs, ")"))
+    }
+
+    # Per outcome level (for classification)
+    if (is.factor(outcome) || is.character(outcome)) {
+      min_level_n <- min(table(outcome))
+      if (min_level_n < 30) {
+        checks$per_level <- list(status = "Warning", text = paste0("Smallest outcome group has only ", min_level_n, " cases (recommend 30+)"))
+      } else if (min_level_n < 50) {
+        checks$per_level <- list(status = "OK", text = paste0("Smallest outcome group: ", min_level_n, " cases"))
+      } else {
+        checks$per_level <- list(status = "OK", text = paste0("Good outcome group sizes (min: ", min_level_n, ")"))
+      }
+    }
+
+    # Observations per predictor
+    obs_per_pred <- round(n_obs / max(n_predictors, 1))
+    if (obs_per_pred < 10) {
+      checks$ratio <- list(status = "Warning", text = paste0("Only ", obs_per_pred, " observations per predictor (recommend 10+)"))
+    } else {
+      checks$ratio <- list(status = "OK", text = paste0(obs_per_pred, " observations per predictor"))
+    }
+
+    # Build UI
+    check_items <- lapply(names(checks), function(nm) {
+      check <- checks[[nm]]
+      icon_name <- switch(check$status,
+                          "OK" = "check-circle",
+                          "Warning" = "exclamation-triangle",
+                          "Issue" = "x-circle"
+      )
+      icon_color <- switch(check$status,
+                           "OK" = "text-success",
+                           "Warning" = "text-warning",
+                           "Issue" = "text-danger"
+      )
+      div(
+        class = "d-flex align-items-center mb-2",
+        bsicons::bs_icon(icon_name, class = paste("me-2", icon_color)),
+        span(check$text)
+      )
+    })
+
+    div(tagList(check_items))
+  })
+
+  # Recommendations
+  output$dq_recommendations <- renderUI({
+    req(data_quality())
+    dq <- data_quality()
+
+    recommendations <- list()
+
+    # Check for constant variables
+    constant_vars <- dq$variance$Variable[dq$variance$Variance_Status == "Constant"]
+    if (length(constant_vars) > 0) {
+      recommendations <- c(recommendations, list(
+        div(
+          class = "d-flex mb-2",
+          bsicons::bs_icon("x-circle", class = "text-danger me-2 flex-shrink-0"),
+          span(
+            tags$strong("Remove constant variables: "),
+            paste(constant_vars, collapse = ", "),
+            " - these have only one value and cannot contribute to the model."
+          )
+        )
+      ))
+    }
+
+    # Check for high missing
+    high_missing <- dq$missing$Variable[dq$missing$Pct_Missing > 50]
+    if (length(high_missing) > 0) {
+      recommendations <- c(recommendations, list(
+        div(
+          class = "d-flex mb-2",
+          bsicons::bs_icon("exclamation-triangle", class = "text-warning me-2 flex-shrink-0"),
+          span(
+            tags$strong("Review high-missingness variables: "),
+            paste(high_missing, collapse = ", "),
+            " - >50% missing. This may be due to skip logic (OK) or data issues (investigate)."
+          )
+        )
+      ))
+    }
+
+    # Check for many correlated pairs
+    if (nrow(dq$correlation) > 5) {
+      recommendations <- c(recommendations, list(
+        div(
+          class = "d-flex mb-2",
+          bsicons::bs_icon("info-circle", class = "text-info me-2 flex-shrink-0"),
+          span(
+            tags$strong("Multiple correlated predictors detected. "),
+            "This is common in attitudinal surveys. The tree will select the most predictive variable at each split, but be aware that similar variables may be interchangeable."
+          )
+        )
+      ))
+    }
+
+    # Sample size
+    if (dq$n_obs < 100) {
+      recommendations <- c(recommendations, list(
+        div(
+          class = "d-flex mb-2",
+          bsicons::bs_icon("exclamation-triangle", class = "text-warning me-2 flex-shrink-0"),
+          span(
+            tags$strong("Small sample size (n=", dq$n_obs, "). "),
+            "Consider using higher cp values (0.02-0.05) to prevent overfitting and ensure stable results."
+          )
+        )
+      ))
+    }
+
+    if (length(recommendations) == 0) {
+      recommendations <- list(
+        div(
+          class = "d-flex mb-2",
+          bsicons::bs_icon("check-circle", class = "text-success me-2 flex-shrink-0"),
+          span(tags$strong("Data looks good! "), "No major issues detected. You're ready to build your decision tree.")
+        )
+      )
+    }
+
+    tagList(recommendations)
+  })
+
+  # -------------------------------------------------------------------------
   # Outputs - Decision Tree
   # -------------------------------------------------------------------------
 
@@ -1269,27 +1944,319 @@ server <- function(input, output, session) {
     )
   })
 
-  output$tree_rules <- renderPrint({
-    req(rv$model)
-    rpart.rules(rv$model, style = "tall", cover = TRUE)
+  # Random Forest importance
+  rf_model <- reactive({
+    req(rv$model, rv$data, input$outcome_var, input$predictor_vars)
+
+    # Prepare data - remove rows with any NA in outcome or predictors
+    predictors <- setdiff(input$predictor_vars, input$outcome_var)
+    model_data <- rv$data[, c(input$outcome_var, predictors), drop = FALSE]
+    model_data <- model_data[complete.cases(model_data), ]
+
+    # Need at least 50 rows for RF
+    if (nrow(model_data) < 50) return(NULL)
+
+    # Build formula
+    formula_str <- paste(input$outcome_var, "~", paste(predictors, collapse = " + "))
+    model_formula <- as.formula(formula_str)
+
+    # Run Random Forest with error handling
+    tryCatch({
+      withProgress(message = "Computing Random Forest importance...", value = 0.5, {
+        rf <- randomForest(
+          formula = model_formula,
+          data = model_data,
+          ntree = 500,
+          importance = TRUE,
+          na.action = na.omit
+        )
+        rf
+      })
+    }, error = function(e) {
+      NULL
+    })
   })
 
-  output$cp_table <- renderDT({
-    req(rv$model)
+  output$rf_importance <- renderPlot({
+    req(rf_model())
 
-    cp_df <- as.data.frame(rv$model$cptable)
-    cp_df[] <- lapply(cp_df, function(x) round(x, 4))
+    rf <- rf_model()
+
+    # Get importance - use MeanDecreaseGini for classification, %IncMSE for regression
+    if (rf$type == "classification") {
+      imp <- importance(rf, type = 2)  # MeanDecreaseGini
+      imp_df <- data.frame(
+        Variable = rownames(imp),
+        Importance = imp[, 1]
+      )
+    } else {
+      imp <- importance(rf, type = 1)  # %IncMSE
+      imp_df <- data.frame(
+        Variable = rownames(imp),
+        Importance = imp[, 1]
+      )
+    }
+
+    imp_df <- imp_df |>
+      arrange(desc(Importance)) |>
+      head(10) |>
+      mutate(Variable = factor(Variable, levels = rev(Variable)))
+
+    # Add labels from dictionary if available
+    if (!is.null(rv$data_dict)) {
+      imp_df$Label <- sapply(as.character(imp_df$Variable), function(v) {
+        match_idx <- match(v, rv$data_dict$variable)
+        if (!is.na(match_idx)) rv$data_dict$label[match_idx] else v
+      })
+      imp_df$DisplayName <- ifelse(nchar(imp_df$Label) > 0, imp_df$Label, as.character(imp_df$Variable))
+      imp_df$DisplayName <- factor(imp_df$DisplayName, levels = rev(imp_df$DisplayName))
+    } else {
+      imp_df$DisplayName <- imp_df$Variable
+    }
+
+    ggplot(imp_df, aes(x = Importance, y = DisplayName)) +
+      geom_col(fill = "#5856d6") +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.title.y = element_blank(),
+        panel.grid.major.y = element_blank()
+      ) +
+      labs(x = "Importance (Mean Decrease Gini)")
+  }, res = 96)
+
+  output$importance_comparison <- renderDT({
+    req(rv$model, rf_model())
+
+    rf <- rf_model()
+
+    # Decision Tree importance
+    if (!is.null(rv$model$variable.importance)) {
+      dt_imp <- data.frame(
+        Variable = names(rv$model$variable.importance),
+        DT_Importance = round(rv$model$variable.importance, 2),
+        stringsAsFactors = FALSE
+      )
+      dt_imp$DT_Rank <- rank(-dt_imp$DT_Importance, ties.method = "min")
+    } else {
+      return(NULL)
+    }
+
+    # Random Forest importance
+    if (rf$type == "classification") {
+      rf_imp_raw <- importance(rf, type = 2)
+    } else {
+      rf_imp_raw <- importance(rf, type = 1)
+    }
+    rf_imp <- data.frame(
+      Variable = rownames(rf_imp_raw),
+      RF_Importance = round(rf_imp_raw[, 1], 2),
+      stringsAsFactors = FALSE
+    )
+    rf_imp$RF_Rank <- rank(-rf_imp$RF_Importance, ties.method = "min")
+
+    # Merge
+    comparison <- merge(dt_imp, rf_imp, by = "Variable", all = TRUE)
+    comparison[is.na(comparison)] <- 0
+
+    # Add labels from dictionary
+    if (!is.null(rv$data_dict)) {
+      comparison$Label <- sapply(comparison$Variable, function(v) {
+        match_idx <- match(v, rv$data_dict$variable)
+        if (!is.na(match_idx)) rv$data_dict$label[match_idx] else ""
+      })
+      comparison <- comparison[, c("Variable", "Label", "DT_Rank", "RF_Rank", "DT_Importance", "RF_Importance")]
+    } else {
+      comparison <- comparison[, c("Variable", "DT_Rank", "RF_Rank", "DT_Importance", "RF_Importance")]
+    }
+
+    # Sort by average rank
+    comparison$Avg_Rank <- (comparison$DT_Rank + comparison$RF_Rank) / 2
+    comparison <- comparison[order(comparison$Avg_Rank), ]
+    comparison$Avg_Rank <- NULL
+
+    # Rename columns for display
+    if ("Label" %in% names(comparison)) {
+      names(comparison) <- c("Variable", "Label", "Tree Rank", "RF Rank", "Tree Imp", "RF Imp")
+    } else {
+      names(comparison) <- c("Variable", "Tree Rank", "RF Rank", "Tree Imp", "RF Imp")
+    }
 
     datatable(
-      cp_df,
+      head(comparison, 15),
       options = list(
         dom = 't',
         paging = FALSE,
         scrollX = TRUE
       ),
-      class = 'compact stripe'
+      class = 'compact stripe hover'
     )
   })
+
+  # -------------------------------------------------------------------------
+  # PowerPoint Export
+  # -------------------------------------------------------------------------
+
+  output$export_pptx <- downloadHandler(
+    filename = function() {
+      paste0("decision_tree_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pptx")
+    },
+    content = function(file) {
+      req(rv$model, rv$data, input$outcome_var)
+
+      withProgress(message = "Generating PowerPoint...", value = 0, {
+
+        # Create PowerPoint
+        pptx <- read_pptx()
+
+        # --- Slide 1: Title Slide ---
+        incProgress(0.2, detail = "Creating title slide...")
+
+        pptx <- add_slide(pptx, layout = "Title Slide", master = "Office Theme")
+        pptx <- ph_with(pptx, value = "Decision Tree Analysis", location = ph_location_type(type = "ctrTitle"))
+        pptx <- ph_with(pptx, value = paste0("Outcome: ", input$outcome_var, "\n", format(Sys.Date(), "%B %d, %Y")),
+                        location = ph_location_type(type = "subTitle"))
+
+        # --- Slide 2: Decision Tree Visualization ---
+        incProgress(0.2, detail = "Adding tree visualization...")
+
+        pptx <- add_slide(pptx, layout = "Title and Content", master = "Office Theme")
+        pptx <- ph_with(pptx, value = "Decision Tree", location = ph_location_type(type = "title"))
+
+        # Save tree plot to temp file
+        tree_temp <- tempfile(fileext = ".png")
+        png(tree_temp, width = 10, height = 7, units = "in", res = 150)
+        rpart.plot(
+          rv$model,
+          type = 4,
+          extra = 104,
+          under = TRUE,
+          fallen.leaves = TRUE,
+          roundint = FALSE,
+          box.palette = "BuGn",
+          shadow.col = "gray",
+          main = ""
+        )
+        dev.off()
+
+        pptx <- ph_with(pptx, value = external_img(tree_temp, width = 9, height = 6),
+                        location = ph_location_type(type = "body"))
+
+        # --- Slide 3: Variable Importance ---
+        incProgress(0.2, detail = "Adding variable importance...")
+
+        if (!is.null(rv$model$variable.importance)) {
+          pptx <- add_slide(pptx, layout = "Title and Content", master = "Office Theme")
+          pptx <- ph_with(pptx, value = "Variable Importance", location = ph_location_type(type = "title"))
+
+          importance_df <- data.frame(
+            Variable = names(rv$model$variable.importance),
+            Importance = round(rv$model$variable.importance, 2)
+          ) |>
+            arrange(desc(Importance)) |>
+            head(10)
+
+          # Add labels from dictionary if available
+          if (!is.null(rv$data_dict)) {
+            importance_df$Label <- sapply(importance_df$Variable, function(v) {
+              match_idx <- match(v, rv$data_dict$variable)
+              if (!is.na(match_idx)) rv$data_dict$label[match_idx] else v
+            })
+            # Use labels for display
+            importance_df$DisplayName <- importance_df$Label
+          } else {
+            importance_df$DisplayName <- importance_df$Variable
+          }
+
+          importance_df <- importance_df |>
+            mutate(DisplayName = factor(DisplayName, levels = rev(DisplayName)))
+
+          # Save importance plot to temp file
+          imp_temp <- tempfile(fileext = ".png")
+          png(imp_temp, width = 10, height = 6, units = "in", res = 150)
+          p <- ggplot(importance_df, aes(x = Importance, y = DisplayName)) +
+            geom_col(fill = "#0071e3") +
+            theme_minimal(base_size = 14) +
+            theme(
+              axis.title.y = element_blank(),
+              panel.grid.major.y = element_blank()
+            ) +
+            labs(x = "Importance Score")
+          print(p)
+          dev.off()
+
+          pptx <- ph_with(pptx, value = external_img(imp_temp, width = 9, height = 5.5),
+                          location = ph_location_type(type = "body"))
+        }
+
+        # --- Slide 4: Model Performance (for classification) ---
+        incProgress(0.2, detail = "Adding model statistics...")
+
+        if (rv$model$method == "class") {
+          pptx <- add_slide(pptx, layout = "Title and Content", master = "Office Theme")
+          pptx <- ph_with(pptx, value = "Model Performance", location = ph_location_type(type = "title"))
+
+          pred <- predict(rv$model, type = "class")
+          actual <- rv$data[[input$outcome_var]]
+          cm <- table(Predicted = pred, Actual = actual)
+          accuracy <- sum(diag(cm)) / sum(cm)
+
+          # Create summary text
+          n_nodes <- sum(rv$model$frame$var == "<leaf>")
+          performance_text <- paste0(
+            "Model Statistics\n\n",
+            "• Accuracy: ", round(accuracy * 100, 1), "%\n",
+            "• Terminal Nodes: ", n_nodes, "\n",
+            "• Training Observations: ", nrow(rv$data), "\n",
+            "• Complexity Parameter: ", input$cp, "\n",
+            "• Minimum Bucket Size: ", input$minbucket, "\n",
+            "• Maximum Depth: ", input$maxdepth
+          )
+
+          pptx <- ph_with(pptx, value = performance_text, location = ph_location_type(type = "body"))
+        }
+
+        # --- Slide 5: Key Decision Rules ---
+        incProgress(0.1, detail = "Adding decision rules...")
+
+        pptx <- add_slide(pptx, layout = "Title and Content", master = "Office Theme")
+        pptx <- ph_with(pptx, value = "Decision Rules", location = ph_location_type(type = "title"))
+
+        rules <- capture.output(rpart.rules(rv$model, style = "tall", cover = TRUE))
+        rules_text <- paste(head(rules, 30), collapse = "\n")  # Limit to first 30 lines
+        if (length(rules) > 30) {
+          rules_text <- paste0(rules_text, "\n\n... (", length(rules) - 30, " more lines)")
+        }
+
+        pptx <- ph_with(pptx, value = rules_text, location = ph_location_type(type = "body"))
+
+        # --- Slide 6: Disclaimer ---
+        incProgress(0.1, detail = "Finalizing...")
+
+        pptx <- add_slide(pptx, layout = "Title and Content", master = "Office Theme")
+        pptx <- ph_with(pptx, value = "Notes & Disclaimer", location = ph_location_type(type = "title"))
+
+        disclaimer_text <- paste0(
+          "Analysis Details\n\n",
+          "• Generated: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "• Tool: Decision Tree Analysis\n\n",
+          "Disclaimer\n\n",
+          "This analysis is provided for informational purposes. ",
+          "Results should be validated by qualified analysts and interpreted ",
+          "in the context of the specific research objectives and data limitations. ",
+          "Decision trees are sensitive to the data used and parameter settings."
+        )
+
+        pptx <- ph_with(pptx, value = disclaimer_text, location = ph_location_type(type = "body"))
+
+        # Save the file
+        print(pptx, target = file)
+
+        # Clean up temp files
+        unlink(tree_temp)
+        if (exists("imp_temp")) unlink(imp_temp)
+      })
+    }
+  )
 
   # -------------------------------------------------------------------------
   # AI Chat Functions
