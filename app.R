@@ -1,4 +1,4 @@
-# Treeveal: AI-Powered Decision Tree Analysis
+# Dendro-Insights: AI-Powered Decision Tree Analysis
 # An interactive Shiny application for building, visualizing, and interpreting decision trees
 # with AI assistance via ellmer
 
@@ -31,7 +31,7 @@ PRODUCTION_MODE <- FALSE
 
 ui <- page_sidebar(
   title = tags$span(
-    "Treeveal",
+    "Dendro-Insights",
     # Show production mode indicator in title
     if (PRODUCTION_MODE) {
       tags$span(
@@ -665,7 +665,7 @@ ui <- page_sidebar(
 
           div(
             class = "mb-4",
-            h4("Treeveal User Guide"),
+            h4("Dendro-Insights User Guide"),
             p(class = "text-muted", "Everything you need to know about decision trees and how to use this app.")
           ),
 
