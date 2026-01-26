@@ -1,4 +1,4 @@
-# Dendro-Insights: AI-Powered Decision Tree Analysis
+# Treeveal: AI-Powered Decision Tree Analysis
 # An interactive Shiny application for building, visualizing, and interpreting decision trees
 # with AI assistance via ellmer
 
@@ -31,7 +31,7 @@ PRODUCTION_MODE <- FALSE
 
 ui <- page_sidebar(
   title = tags$span(
-    "Dendro-Insights",
+    "Treeveal",
     # Show production mode indicator in title
     if (PRODUCTION_MODE) {
       tags$span(
@@ -665,7 +665,7 @@ ui <- page_sidebar(
 
           div(
             class = "mb-4",
-            h4("Dendro-Insights User Guide"),
+            h4("Treeveal User Guide"),
             p(class = "text-muted", "Everything you need to know about decision trees and how to use this app.")
           ),
 
@@ -1978,56 +1978,100 @@ server <- function(input, output, session) {
   })
 
   output$rf_importance <- renderPlot({
-    req(rf_model())
-
     rf <- rf_model()
 
-    # Get importance - use MeanDecreaseGini for classification, %IncMSE for regression
-    if (rf$type == "classification") {
-      imp <- importance(rf, type = 2)  # MeanDecreaseGini
-      imp_df <- data.frame(
-        Variable = rownames(imp),
-        Importance = imp[, 1]
-      )
+    # Handle case where RF couldn't be computed
+    if (is.null(rf)) {
+      # Return a message plot
+      ggplot() +
+        annotate("text", x = 0.5, y = 0.5,
+                 label = "Random Forest could not be computed.\n\nPossible reasons:\n• Fewer than 50 complete cases\n• Data type incompatibility\n• Too many factor levels",
+                 size = 4, color = "#86868b", hjust = 0.5, vjust = 0.5) +
+        theme_void() +
+        xlim(0, 1) + ylim(0, 1)
     } else {
-      imp <- importance(rf, type = 1)  # %IncMSE
-      imp_df <- data.frame(
-        Variable = rownames(imp),
-        Importance = imp[, 1]
-      )
+      # Get importance - use MeanDecreaseGini for classification, %IncMSE for regression
+      if (rf$type == "classification") {
+        imp <- importance(rf, type = 2)  # MeanDecreaseGini
+        imp_df <- data.frame(
+          Variable = rownames(imp),
+          Importance = imp[, 1]
+        )
+      } else {
+        imp <- importance(rf, type = 1)  # %IncMSE
+        imp_df <- data.frame(
+          Variable = rownames(imp),
+          Importance = imp[, 1]
+        )
+      }
+
+      imp_df <- imp_df |>
+        arrange(desc(Importance)) |>
+        head(10) |>
+        mutate(Variable = factor(Variable, levels = rev(Variable)))
+
+      # Add labels from dictionary if available
+      if (!is.null(rv$data_dict)) {
+        imp_df$Label <- sapply(as.character(imp_df$Variable), function(v) {
+          match_idx <- match(v, rv$data_dict$variable)
+          if (!is.na(match_idx)) rv$data_dict$label[match_idx] else v
+        })
+        imp_df$DisplayName <- ifelse(nchar(imp_df$Label) > 0, imp_df$Label, as.character(imp_df$Variable))
+        imp_df$DisplayName <- factor(imp_df$DisplayName, levels = rev(imp_df$DisplayName))
+      } else {
+        imp_df$DisplayName <- imp_df$Variable
+      }
+
+      ggplot(imp_df, aes(x = Importance, y = DisplayName)) +
+        geom_col(fill = "#5856d6") +
+        theme_minimal(base_size = 12) +
+        theme(
+          axis.title.y = element_blank(),
+          panel.grid.major.y = element_blank()
+        ) +
+        labs(x = "Importance (Mean Decrease Gini)")
     }
-
-    imp_df <- imp_df |>
-      arrange(desc(Importance)) |>
-      head(10) |>
-      mutate(Variable = factor(Variable, levels = rev(Variable)))
-
-    # Add labels from dictionary if available
-    if (!is.null(rv$data_dict)) {
-      imp_df$Label <- sapply(as.character(imp_df$Variable), function(v) {
-        match_idx <- match(v, rv$data_dict$variable)
-        if (!is.na(match_idx)) rv$data_dict$label[match_idx] else v
-      })
-      imp_df$DisplayName <- ifelse(nchar(imp_df$Label) > 0, imp_df$Label, as.character(imp_df$Variable))
-      imp_df$DisplayName <- factor(imp_df$DisplayName, levels = rev(imp_df$DisplayName))
-    } else {
-      imp_df$DisplayName <- imp_df$Variable
-    }
-
-    ggplot(imp_df, aes(x = Importance, y = DisplayName)) +
-      geom_col(fill = "#5856d6") +
-      theme_minimal(base_size = 12) +
-      theme(
-        axis.title.y = element_blank(),
-        panel.grid.major.y = element_blank()
-      ) +
-      labs(x = "Importance (Mean Decrease Gini)")
   }, res = 96)
 
   output$importance_comparison <- renderDT({
-    req(rv$model, rf_model())
+    req(rv$model)
 
     rf <- rf_model()
+
+    # If RF failed, show only decision tree importance
+    if (is.null(rf)) {
+      if (!is.null(rv$model$variable.importance)) {
+        dt_imp <- data.frame(
+          Variable = names(rv$model$variable.importance),
+          DT_Importance = round(rv$model$variable.importance, 2),
+          stringsAsFactors = FALSE
+        )
+        dt_imp$DT_Rank <- rank(-dt_imp$DT_Importance, ties.method = "min")
+        dt_imp <- dt_imp[order(dt_imp$DT_Rank), ]
+
+        # Add labels from dictionary
+        if (!is.null(rv$data_dict)) {
+          dt_imp$Label <- sapply(dt_imp$Variable, function(v) {
+            match_idx <- match(v, rv$data_dict$variable)
+            if (!is.na(match_idx)) rv$data_dict$label[match_idx] else ""
+          })
+          dt_imp <- dt_imp[, c("Variable", "Label", "DT_Rank", "DT_Importance")]
+          names(dt_imp) <- c("Variable", "Label", "Tree Rank", "Tree Importance")
+        } else {
+          dt_imp <- dt_imp[, c("Variable", "DT_Rank", "DT_Importance")]
+          names(dt_imp) <- c("Variable", "Tree Rank", "Tree Importance")
+        }
+
+        return(datatable(
+          head(dt_imp, 15),
+          options = list(dom = 't', paging = FALSE, scrollX = TRUE),
+          class = 'compact stripe hover',
+          caption = "Note: Random Forest comparison unavailable"
+        ))
+      } else {
+        return(NULL)
+      }
+    }
 
     # Decision Tree importance
     if (!is.null(rv$model$variable.importance)) {
@@ -2379,7 +2423,7 @@ server <- function(input, output, session) {
         "explain what additional analysis might be needed."
       )
 
-      # Create chat based on provider
+      # Create chat based on provider with validation
       if (input$ai_provider == "azure") {
         # Azure OpenAI (secure company endpoint)
         model <- input$ai_model
@@ -2389,8 +2433,19 @@ server <- function(input, output, session) {
         api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
         endpoint <- Sys.getenv("AZURE_OPENAI_ENDPOINT")
 
-        if (any(c(api_key, endpoint, model) == "")) {
-          stop("Azure environment variables not set. Please ensure AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_DEPLOYMENT are configured.")
+        # Check for missing credentials
+        missing_vars <- c()
+        if (api_key == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_API_KEY")
+        if (endpoint == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_ENDPOINT")
+        if (model == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_DEPLOYMENT")
+
+        if (length(missing_vars) > 0) {
+          stop(paste0(
+            "Azure OpenAI is not configured. Missing environment variables:\n\n",
+            paste("•", missing_vars, collapse = "\n"),
+            "\n\nPlease contact your administrator to set up Azure OpenAI access, ",
+            "or switch to a different AI provider in the sidebar."
+          ))
         }
 
         rv$chat <- ellmer::chat_azure_openai(
@@ -2401,23 +2456,62 @@ server <- function(input, output, session) {
           system_prompt = system_prompt,
           echo = FALSE
         )
+
       } else if (input$ai_provider == "ollama") {
-        rv$chat <- chat_ollama(
-          model = input$ai_model,
-          system_prompt = system_prompt
-        )
+        # Check if Ollama is likely running
+        rv$chat <- tryCatch({
+          chat_ollama(
+            model = input$ai_model,
+            system_prompt = system_prompt
+          )
+        }, error = function(e) {
+          stop(paste0(
+            "Could not connect to Ollama. Please ensure:\n\n",
+            "• Ollama is installed and running locally\n",
+            "• The model '", input$ai_model, "' is downloaded\n",
+            "• Ollama is accessible at http://localhost:11434\n\n",
+            "Error details: ", e$message
+          ))
+        })
+
       } else if (input$ai_provider == "anthropic") {
+        api_key <- Sys.getenv("ANTHROPIC_API_KEY")
+        if (api_key == "") {
+          stop(paste0(
+            "Anthropic API key not found.\n\n",
+            "Please set the ANTHROPIC_API_KEY environment variable.\n\n",
+            "You can get an API key from: https://console.anthropic.com/"
+          ))
+        }
         rv$chat <- chat_anthropic(
           model = input$ai_model,
           system_prompt = system_prompt
         )
+
       } else if (input$ai_provider == "gemini") {
+        api_key <- Sys.getenv("GEMINI_API_KEY")
+        if (api_key == "") {
+          stop(paste0(
+            "Google Gemini API key not found.\n\n",
+            "Please set the GEMINI_API_KEY environment variable.\n\n",
+            "You can get an API key from: https://aistudio.google.com/apikey"
+          ))
+        }
         rv$chat <- chat_google_gemini(
           model = input$ai_model,
           system_prompt = system_prompt,
-          api_key = Sys.getenv("GEMINI_API_KEY")
+          api_key = api_key
         )
-      } else {
+
+      } else if (input$ai_provider == "openai") {
+        api_key <- Sys.getenv("OPENAI_API_KEY")
+        if (api_key == "") {
+          stop(paste0(
+            "OpenAI API key not found.\n\n",
+            "Please set the OPENAI_API_KEY environment variable.\n\n",
+            "You can get an API key from: https://platform.openai.com/api-keys"
+          ))
+        }
         rv$chat <- chat_openai(
           model = input$ai_model,
           system_prompt = system_prompt
@@ -2437,8 +2531,22 @@ server <- function(input, output, session) {
       list(role = "user", content = message)
     ))
 
-    # Get or create chat
-    chat <- get_chat()
+    # Try to get or create chat - handle configuration errors
+    chat <- tryCatch({
+      get_chat()
+    }, error = function(e) {
+      # Configuration error (missing API key, etc.)
+      rv$chat_history <- c(rv$chat_history, list(
+        list(role = "assistant", content = paste0(
+          "⚠️ **AI Configuration Error**\n\n",
+          e$message,
+          "\n\nPlease check your settings and try again."
+        ))
+      ))
+      return(NULL)
+    })
+
+    if (is.null(chat)) return(invisible(NULL))
 
     tryCatch({
       # Get AI response
@@ -2450,11 +2558,32 @@ server <- function(input, output, session) {
       ))
 
     }, error = function(e) {
-      error_msg <- paste("Error communicating with AI:", e$message)
+      # Parse common error types for user-friendly messages
+      error_text <- e$message
+
+      user_message <- if (grepl("401|unauthorized|invalid.*key", error_text, ignore.case = TRUE)) {
+        "**Authentication Failed**\n\nYour API key appears to be invalid or expired. Please check your API key configuration."
+      } else if (grepl("429|rate.?limit|too many requests", error_text, ignore.case = TRUE)) {
+        "**Rate Limit Exceeded**\n\nToo many requests. Please wait a moment and try again."
+      } else if (grepl("timeout|timed out|connection", error_text, ignore.case = TRUE)) {
+        "**Connection Error**\n\nCould not connect to the AI service. Please check your internet connection and try again."
+      } else if (grepl("500|502|503|504|server error", error_text, ignore.case = TRUE)) {
+        "**Service Unavailable**\n\nThe AI service is temporarily unavailable. Please try again in a few minutes."
+      } else if (grepl("model.*not found|does not exist", error_text, ignore.case = TRUE)) {
+        paste0("**Model Not Found**\n\nThe selected model '", input$ai_model, "' is not available. Please select a different model.")
+      } else {
+        paste0("**Error**\n\n", error_text)
+      }
+
       rv$chat_history <- c(rv$chat_history, list(
-        list(role = "assistant", content = paste("⚠️", error_msg))
+        list(role = "assistant", content = paste0("⚠️ ", user_message))
       ))
-      showNotification(error_msg, type = "error")
+
+      showNotification(
+        "AI request failed. See chat for details.",
+        type = "error",
+        duration = 5
+      )
     })
   }
 
