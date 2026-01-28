@@ -64,6 +64,13 @@ ui <- page_sidebar(
     "border-radius" = "12px"
   ) |> bs_add_rules(sass::sass_file("www/styles.css")),
 
+  # Suppress Shiny reconnect dialogs
+  tags$head(
+    tags$style(HTML("
+      #shiny-disconnected-overlay, #ss-connect-dialog { display: none !important; }
+    "))
+  ),
+
   # Sidebar with data and model controls
   sidebar = sidebar(
     width = 350,
@@ -213,6 +220,24 @@ ui <- page_sidebar(
           "Model",
           choices = NULL,
           selected = NULL
+        ),
+
+        selectInput(
+          "user_persona",
+          "Response Style",
+          choices = c(
+            "Executive Summary" = "executive",
+            "Project Team (Default)" = "project_team",
+            "Statistician" = "statistician"
+          ),
+          selected = "project_team"
+        ),
+        helpText(
+          class = "small text-muted",
+          style = "line-height: 1.3; font-size: 0.8em;",
+          tags$strong("Executive:"), " Brief, action-focused", tags$br(),
+          tags$strong("Project Team:"), " Clear narrative for reports", tags$br(),
+          tags$strong("Statistician:"), " Technical detail & diagnostics"
         ),
 
         textAreaInput(
@@ -1222,6 +1247,9 @@ server <- function(input, output, session) {
 
   # Update AI model choices based on provider
   observeEvent(input$ai_provider, {
+    # Reset chat when provider changes
+    rv$chat <- NULL
+
     if (input$ai_provider == "azure") {
       # Azure OpenAI - model comes from environment variable
       azure_model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
@@ -1268,6 +1296,11 @@ server <- function(input, output, session) {
         selected = "gpt-5-mini"
       )
     }
+  })
+
+  # Reset chat when persona changes so new system prompt takes effect
+  observeEvent(input$user_persona, {
+    rv$chat <- NULL
   })
 
   # -------------------------------------------------------------------------
@@ -1869,10 +1902,14 @@ server <- function(input, output, session) {
   output$tree_plot <- renderPlot({
     req(rv$model)
 
+    # Use extra=104 for classification (shows class probabilities + %)
+    # Use extra=101 for regression/anova (shows n + %)
+    extra_val <- if (rv$model$method == "class") 104 else 101
+
     rpart.plot(
       rv$model,
       type = 4,
-      extra = 104,
+      extra = extra_val,
       under = TRUE,
       fallen.leaves = TRUE,
       roundint = FALSE,
@@ -2169,10 +2206,12 @@ server <- function(input, output, session) {
         # Save tree plot to temp file
         tree_temp <- tempfile(fileext = ".png")
         png(tree_temp, width = 10, height = 7, units = "in", res = 150)
+        # Use extra=104 for classification, extra=101 for regression/anova
+        extra_val <- if (rv$model$method == "class") 104 else 101
         rpart.plot(
           rv$model,
           type = 4,
-          extra = 104,
+          extra = extra_val,
           under = TRUE,
           fallen.leaves = TRUE,
           roundint = FALSE,
@@ -2404,6 +2443,53 @@ server <- function(input, output, session) {
   get_chat <- function() {
     if (is.null(rv$chat)) {
 
+      # Define persona-specific instructions
+      persona_instructions <- switch(input$user_persona,
+                                     "executive" = paste0(
+                                       "\n\nRESPONSE STYLE - EXECUTIVE SUMMARY:\n",
+                                       "- Be extremely concise - aim for 3-5 bullet points maximum\n",
+                                       "- Lead with the single most important finding\n",
+                                       "- Focus on 'so what?' - business implications and recommended actions\n",
+                                       "- Avoid statistical jargon entirely - use plain business language\n",
+                                       "- Use specific numbers only when they drive a decision (e.g., '81% of high prescribers...')\n",
+                                       "- Format: Brief intro sentence, then bullet points, then one-line recommendation\n",
+                                       "- Total response should be readable in under 30 seconds\n",
+                                       "- Do NOT offer to run additional analyses or suggest follow-up statistical work"
+                                     ),
+                                     "project_team" = paste0(
+                                       "\n\nRESPONSE STYLE - PROJECT TEAM:\n",
+                                       "- Write clear, flowing paragraphs suitable for a client report\n",
+                                       "- Explain findings in accessible language - assume smart non-statisticians\n",
+                                       "- Include key numbers and percentages that tell the story\n",
+                                       "- Connect findings to practical implications\n",
+                                       "- Use 2-3 short paragraphs, not lengthy technical explanations\n",
+                                       "- Avoid statistical terminology unless you briefly explain it\n",
+                                       "- The output should be something they could paste into a PowerPoint or report\n",
+                                       "- Do NOT end with offers to run additional analyses - you cannot execute code or run new models in this tool\n",
+                                       "- If relevant, you may mention what additional analyses COULD be done outside this tool, but frame it as 'for further investigation, your analyst could...' rather than offering to do it yourself"
+                                     ),
+                                     "statistician" = paste0(
+                                       "\n\nRESPONSE STYLE - STATISTICIAN:\n",
+                                       "- Include full technical detail: accuracy metrics, node counts, split criteria\n",
+                                       "- Discuss model diagnostics: potential overfitting, variable importance rankings\n",
+                                       "- Reference specific threshold values and their statistical meaning\n",
+                                       "- Compare decision tree results with Random Forest importance where relevant\n",
+                                       "- Note methodological considerations and limitations\n",
+                                       "- Use proper statistical terminology\n",
+                                       "- IMPORTANT: You can only interpret the model that has already been built - you cannot run additional analyses, execute code, or build new models\n",
+                                       "- If suggesting additional analyses (cross-validation, sensitivity analysis, etc.), clearly frame these as recommendations for the analyst to pursue separately, NOT something you can do in this conversation\n",
+                                       "- For example, say 'I would recommend validating with k-fold CV' rather than 'I can compute cross-validated performance'"
+                                     ),
+                                     # Default fallback
+                                     paste0(
+                                       "\n\nRESPONSE STYLE:\n",
+                                       "- Be clear and concise\n",
+                                       "- Use plain language\n",
+                                       "- Focus on actionable insights\n",
+                                       "- Do not offer to run additional analyses"
+                                     )
+      )
+
       # Build system prompt with model context
       system_prompt <- paste0(
         "You are an expert statistical analyst and data scientist specializing in decision tree analysis. ",
@@ -2420,7 +2506,8 @@ server <- function(input, output, session) {
         "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'.\n",
         "- Provide clear, actionable insights. Use specific numbers from the model when relevant.\n",
         "- Be conversational but precise. If the user asks about something not shown in the model, ",
-        "explain what additional analysis might be needed."
+        "explain what additional analysis might be needed.",
+        persona_instructions
       )
 
       # Create chat based on provider with validation
