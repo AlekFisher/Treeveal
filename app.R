@@ -122,7 +122,25 @@ ui <- page_sidebar(
             selected = NULL,
             multiple = TRUE
           ),
-          helpText("Select variables to include in the model")
+          helpText("Select variables to include in the model"),
+
+          # Prefix removal section
+          div(
+            class = "mt-2",
+            style = "font-size: 0.85em;",
+            div(
+              class = "d-flex justify-content-between align-items-center mb-1",
+              tags$label("Remove by Prefix", class = "form-label small text-muted mb-0"),
+              actionButton(
+                "reset_predictors",
+                "Reset All",
+                class = "btn-outline-secondary btn-sm",
+                style = "font-size: 0.7em; padding: 1px 6px;",
+                icon = icon("rotate-left")
+              )
+            ),
+            uiOutput("prefix_buttons")
+          )
         )
       ),
 
@@ -348,29 +366,29 @@ ui <- page_sidebar(
                   title = "Ready for Analysis",
                   value = textOutput("dq_ready_vars", inline = TRUE),
                   showcase = bsicons::bs_icon("check-circle"),
-                  theme = "success",
-                  height = "120px"
+                  showcase_layout = "left center",
+                  theme = "success"
                 ),
                 value_box(
                   title = "Warnings",
                   value = textOutput("dq_warning_vars", inline = TRUE),
                   showcase = bsicons::bs_icon("exclamation-triangle"),
-                  theme = "warning",
-                  height = "120px"
+                  showcase_layout = "left center",
+                  theme = "warning"
                 ),
                 value_box(
                   title = "Issues",
                   value = textOutput("dq_issue_vars", inline = TRUE),
                   showcase = bsicons::bs_icon("x-circle"),
-                  theme = "danger",
-                  height = "120px"
+                  showcase_layout = "left center",
+                  theme = "danger"
                 ),
                 value_box(
                   title = "Overall Status",
                   value = textOutput("dq_overall_status", inline = TRUE),
                   showcase = bsicons::bs_icon("speedometer2"),
-                  theme = "info",
-                  height = "120px"
+                  showcase_layout = "left center",
+                  theme = "info"
                 )
               )
             )
@@ -463,120 +481,18 @@ ui <- page_sidebar(
       title = "Decision Tree",
       icon = bsicons::bs_icon("diagram-3"),
 
-      layout_columns(
-        col_widths = c(7, 5),
-
-        # Left: Tree Visualization
-        card(
-          card_header(
-            class = "d-flex justify-content-between align-items-center",
-            span("Decision Tree Visualization"),
-            conditionalPanel(
-              condition = "output.model_built",
-              downloadButton(
-                "export_pptx",
-                "Export",
-                class = "btn-sm btn-outline-primary",
-                icon = icon("file-powerpoint")
-              )
-            )
-          ),
-          card_body(
-            min_height = "600px",
-            conditionalPanel(
-              condition = "!output.model_built",
-              div(
-                class = "text-center py-5",
-                bsicons::bs_icon("diagram-3", size = "4rem", class = "text-muted"),
-                h4(class = "text-muted mt-3", "No model built yet"),
-                p(class = "text-muted", "Configure your model and click 'Build Decision Tree'")
-              )
-            ),
-            conditionalPanel(
-              condition = "output.model_built",
-              plotOutput("tree_plot", height = "550px")
-            )
-          )
-        ),
-
-        # Right: AI Chat
-        card(
-          card_header(
-            class = "d-flex justify-content-between align-items-center",
-            span("AI Interpretation"),
-            actionButton(
-              "clear_chat",
-              "Clear",
-              class = "btn-sm btn-outline-secondary",
-              icon = icon("trash")
-            )
-          ),
-          card_body(
-            class = "d-flex flex-column",
-            style = "height: 600px; padding: 1rem;",
-
-            conditionalPanel(
-              condition = "!output.model_built",
-              div(
-                class = "text-center py-5",
-                bsicons::bs_icon("robot", size = "4rem", class = "text-muted"),
-                h4(class = "text-muted mt-3", "Build a model first"),
-                p(class = "text-muted", "The AI needs a decision tree to interpret")
-              )
-            ),
-
-            conditionalPanel(
-              condition = "output.model_built",
-              class = "d-flex flex-column flex-grow-1",
-              style = "min-height: 0;",
-
-              # Chat history display - takes up remaining space
-              div(
-                id = "chat_container",
-                class = "flex-grow-1",
-                style = "overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #f8f9fa; min-height: 0;",
-                uiOutput("chat_history")
-              ),
-
-              # Quick action buttons - fixed at bottom
-              div(
-                class = "mt-2 mb-2 flex-shrink-0",
-                actionButton("ask_interpret", "Interpret", class = "btn-outline-primary btn-sm me-1", icon = icon("lightbulb")),
-                actionButton("ask_insights", "Insights", class = "btn-outline-primary btn-sm me-1", icon = icon("chart-line")),
-                actionButton("ask_recommendations", "Recommend", class = "btn-outline-primary btn-sm me-1", icon = icon("list-check")),
-                actionButton("ask_limitations", "Limits", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
-              ),
-
-              # User input - fixed at bottom
-              div(
-                class = "flex-shrink-0",
-                layout_columns(
-                  col_widths = c(9, 3),
-                  textAreaInput(
-                    "user_message",
-                    NULL,
-                    placeholder = "Ask about your tree...",
-                    rows = 2
-                  ),
-                  actionButton(
-                    "send_message",
-                    "Send",
-                    class = "btn-primary w-100 h-100",
-                    icon = icon("paper-plane")
-                  )
-                ),
-                # AI Disclaimer
-                p(
-                  class = "text-muted small mt-2 mb-0",
-                  style = "font-size: 0.75rem; line-height: 1.3;",
-                  bsicons::bs_icon("info-circle", class = "me-1"),
-                  "AI can make mistakes. Always verify interpretations against the actual model output and use professional judgment."
-                )
-              )
-            )
-          )
+      # Toggle button for AI panel
+      div(
+        class = "mb-2 d-flex justify-content-end",
+        actionButton(
+          "toggle_ai_panel",
+          "Show AI Chat",
+          class = "btn-sm btn-outline-secondary",
+          icon = icon("robot")
         )
-      )
+      ),
+
+      uiOutput("tree_layout")
     ),
 
     # Model Details Tab
@@ -952,7 +868,8 @@ server <- function(input, output, session) {
     data_dict = NULL,
     model = NULL,
     chat_history = list(),
-    chat = NULL  # ellmer chat object
+    chat = NULL,  # ellmer chat object
+    show_ai_panel = FALSE  # AI chat panel visibility
   )
 
   # -------------------------------------------------------------------------
@@ -1245,6 +1162,240 @@ server <- function(input, output, session) {
     )
   })
 
+  # -------------------------------------------------------------------------
+  # Prefix-based Variable Removal
+  # -------------------------------------------------------------------------
+
+  # Generate prefix removal buttons
+  output$prefix_buttons <- renderUI({
+    req(input$predictor_vars)
+
+    # Extract prefixes (text before underscore or first 3+ chars if no underscore)
+    vars <- input$predictor_vars
+    prefixes <- sapply(vars, function(v) {
+      if (grepl("_", v)) {
+        sub("_.*", "", v)
+      } else if (nchar(v) >= 3) {
+        substr(v, 1, 3)
+      } else {
+        v
+      }
+    })
+
+    # Count variables per prefix (only show prefixes with 2+ variables)
+    prefix_counts <- table(prefixes)
+    multi_prefixes <- names(prefix_counts[prefix_counts >= 2])
+
+    if (length(multi_prefixes) == 0) {
+      return(helpText(class = "small text-muted", "No common prefixes detected"))
+    }
+
+    # Sort by count descending
+    multi_prefixes <- multi_prefixes[order(-prefix_counts[multi_prefixes])]
+
+    # Create buttons for each prefix
+    buttons <- lapply(multi_prefixes, function(prefix) {
+      count <- prefix_counts[prefix]
+      actionButton(
+        inputId = paste0("remove_prefix_", prefix),
+        label = paste0(prefix, "_ (", count, ")"),
+        class = "btn-outline-danger btn-sm me-1 mb-1",
+        style = "font-size: 0.75em; padding: 2px 6px;"
+      )
+    })
+
+    tagList(
+      div(class = "d-flex flex-wrap", buttons),
+      helpText(class = "small text-muted mt-1", "Click to remove all variables with this prefix")
+    )
+  })
+
+  # Observe prefix removal button clicks
+  observe({
+    req(rv$data)
+    vars <- names(rv$data)
+
+    # Extract all possible prefixes
+    prefixes <- unique(sapply(vars, function(v) {
+      if (grepl("_", v)) sub("_.*", "", v) else if (nchar(v) >= 3) substr(v, 1, 3) else v
+    }))
+
+    # Create observers for each prefix button
+    lapply(prefixes, function(prefix) {
+      observeEvent(input[[paste0("remove_prefix_", prefix)]], {
+        current_vars <- input$predictor_vars
+
+        # Find variables that start with this prefix
+        pattern <- paste0("^", prefix, "_")
+        vars_to_remove <- current_vars[grepl(pattern, current_vars)]
+
+        if (length(vars_to_remove) > 0) {
+          new_vars <- setdiff(current_vars, vars_to_remove)
+          updateSelectInput(session, "predictor_vars", selected = new_vars)
+          showNotification(
+            paste0("Removed ", length(vars_to_remove), " variables with prefix '", prefix, "_'"),
+            type = "message"
+          )
+        }
+      }, ignoreInit = TRUE)
+    })
+  })
+
+  # Reset predictors to full list
+  observeEvent(input$reset_predictors, {
+    req(rv$data)
+    all_vars <- names(rv$data)
+    # Select all variables except the current outcome variable
+    outcome <- input$outcome_var
+    predictors <- setdiff(all_vars, outcome)
+    updateSelectInput(session, "predictor_vars", selected = predictors)
+    showNotification("Predictor variables reset to full list", type = "message")
+  })
+
+  # -------------------------------------------------------------------------
+  # AI Panel Toggle
+  # -------------------------------------------------------------------------
+
+  observeEvent(input$toggle_ai_panel, {
+    rv$show_ai_panel <- !rv$show_ai_panel
+    # Update button text
+    updateActionButton(
+      session, "toggle_ai_panel",
+      label = if (rv$show_ai_panel) "Hide AI Chat" else "Show AI Chat"
+    )
+  })
+
+  # Dynamic tree layout based on AI panel visibility
+  output$tree_layout <- renderUI({
+    if (rv$show_ai_panel) {
+      # Two-column layout with AI chat
+      layout_columns(
+        col_widths = c(7, 5),
+        # Tree visualization card
+        tree_card_ui(),
+        # AI chat card
+        ai_chat_card_ui()
+      )
+    } else {
+      # Full-width tree only
+      tree_card_ui()
+    }
+  })
+
+  # Helper function for tree card UI
+  tree_card_ui <- function() {
+    card(
+      card_header(
+        class = "d-flex justify-content-between align-items-center",
+        span("Decision Tree Visualization"),
+        conditionalPanel(
+          condition = "output.model_built",
+          downloadButton(
+            "export_pptx",
+            "Export",
+            class = "btn-sm btn-outline-primary",
+            icon = icon("file-powerpoint")
+          )
+        )
+      ),
+      card_body(
+        min_height = "600px",
+        conditionalPanel(
+          condition = "!output.model_built",
+          div(
+            class = "text-center py-5",
+            bsicons::bs_icon("diagram-3", size = "4rem", class = "text-muted"),
+            h4(class = "text-muted mt-3", "No model built yet"),
+            p(class = "text-muted", "Configure your model and click 'Build Decision Tree'")
+          )
+        ),
+        conditionalPanel(
+          condition = "output.model_built",
+          plotOutput("tree_plot", height = if (rv$show_ai_panel) "550px" else "650px")
+        )
+      )
+    )
+  }
+
+  # Helper function for AI chat card UI
+  ai_chat_card_ui <- function() {
+    card(
+      card_header(
+        class = "d-flex justify-content-between align-items-center",
+        span("AI Interpretation"),
+        actionButton(
+          "clear_chat",
+          "Clear",
+          class = "btn-sm btn-outline-secondary",
+          icon = icon("trash")
+        )
+      ),
+      card_body(
+        class = "d-flex flex-column",
+        style = "height: 600px; padding: 1rem;",
+
+        conditionalPanel(
+          condition = "!output.model_built",
+          div(
+            class = "text-center py-5",
+            bsicons::bs_icon("robot", size = "4rem", class = "text-muted"),
+            h4(class = "text-muted mt-3", "Build a model first"),
+            p(class = "text-muted", "The AI needs a decision tree to interpret")
+          )
+        ),
+
+        conditionalPanel(
+          condition = "output.model_built",
+          class = "d-flex flex-column flex-grow-1",
+          style = "min-height: 0;",
+
+          # Chat history display
+          div(
+            id = "chat_container",
+            class = "flex-grow-1",
+            style = "overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #f8f9fa; min-height: 0;",
+            uiOutput("chat_history")
+          ),
+
+          # Quick action buttons
+          div(
+            class = "mt-2 mb-2 flex-shrink-0",
+            actionButton("ask_interpret", "Interpret", class = "btn-outline-primary btn-sm me-1", icon = icon("lightbulb")),
+            actionButton("ask_insights", "Insights", class = "btn-outline-primary btn-sm me-1", icon = icon("chart-line")),
+            actionButton("ask_recommendations", "Recommend", class = "btn-outline-primary btn-sm me-1", icon = icon("list-check")),
+            actionButton("ask_limitations", "Limits", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
+          ),
+
+          # User input
+          div(
+            class = "flex-shrink-0",
+            layout_columns(
+              col_widths = c(9, 3),
+              textAreaInput(
+                "user_message",
+                NULL,
+                placeholder = "Ask about your tree...",
+                rows = 2
+              ),
+              actionButton(
+                "send_message",
+                "Send",
+                class = "btn-primary w-100 h-100",
+                icon = icon("paper-plane")
+              )
+            ),
+            p(
+              class = "text-muted small mt-2 mb-0",
+              style = "font-size: 0.75rem; line-height: 1.3;",
+              bsicons::bs_icon("info-circle", class = "me-1"),
+              "AI can make mistakes. Always verify interpretations against the actual model output and use professional judgment."
+            )
+          )
+        )
+      )
+    )
+  }
+
   # Update AI model choices based on provider
   observeEvent(input$ai_provider, {
     # Reset chat when provider changes
@@ -1325,11 +1476,29 @@ server <- function(input, output, session) {
         formula_str <- paste(input$outcome_var, "~", paste(predictors, collapse = " + "))
         model_formula <- as.formula(formula_str)
 
+        # Create a copy of the data for modeling
+        model_data <- rv$data
+
+        # Convert binary numeric variables (0/1) to factors for cleaner splits
+        # This prevents splits like "< 0.5" and instead treats them as categorical
+        for (var in c(input$outcome_var, predictors)) {
+          if (var %in% names(model_data)) {
+            col <- model_data[[var]]
+            # Check if numeric and binary (only 0 and 1 values, possibly with NA)
+            if (is.numeric(col) && !is.factor(col)) {
+              unique_vals <- unique(na.omit(col))
+              if (length(unique_vals) == 2 && all(unique_vals %in% c(0, 1))) {
+                model_data[[var]] <- factor(col, levels = c(0, 1), labels = c("0", "1"))
+              }
+            }
+          }
+        }
+
         # Fit model
         rv$model <- rpart(
           formula = model_formula,
-          data = rv$data,
-          method = ifelse(is.factor(rv$data[[input$outcome_var]]), "class", "anova"),
+          data = model_data,
+          method = ifelse(is.factor(model_data[[input$outcome_var]]), "class", "anova"),
           control = rpart.control(
             cp = input$cp,
             minbucket = input$minbucket,
@@ -2099,12 +2268,39 @@ server <- function(input, output, session) {
           names(dt_imp) <- c("Variable", "Tree Rank", "Tree Importance")
         }
 
+        dt_imp <- head(dt_imp, 15)
+        rank_col <- if ("Label" %in% names(dt_imp)) "Tree Rank" else "Tree Rank"
+
         return(datatable(
-          head(dt_imp, 15),
-          options = list(dom = 't', paging = FALSE, scrollX = TRUE),
-          class = 'compact stripe hover',
+          dt_imp,
+          options = list(
+            dom = 't',
+            paging = FALSE,
+            scrollX = TRUE,
+            columnDefs = list(
+              list(className = 'dt-center', targets = '_all'),
+              # Hide importance column
+              list(visible = FALSE, targets = if ("Label" %in% names(dt_imp)) 3 else 2)
+            )
+          ),
+          class = 'compact hover',
+          rownames = FALSE,
           caption = "Note: Random Forest comparison unavailable"
-        ))
+        ) %>%
+          formatStyle(
+            rank_col,
+            backgroundColor = styleInterval(
+              c(3, 6, 10),
+              c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')
+            ),
+            fontWeight = styleInterval(c(3), c('bold', 'normal'))
+          ) %>%
+          formatStyle(
+            'Variable',
+            fontWeight = 'bold',
+            fontSize = '0.9em'
+          )
+        )
       } else {
         return(NULL)
       }
@@ -2162,15 +2358,49 @@ server <- function(input, output, session) {
       names(comparison) <- c("Variable", "Tree Rank", "RF Rank", "Tree Imp", "RF Imp")
     }
 
+    # Limit to top 15 and prepare for display
+    comparison <- head(comparison, 15)
+
+    # Get rank columns for color coding
+    tree_rank_col <- if ("Label" %in% names(comparison)) "Tree Rank" else "Tree Rank"
+    rf_rank_col <- if ("Label" %in% names(comparison)) "RF Rank" else "RF Rank"
+
     datatable(
-      head(comparison, 15),
+      comparison,
       options = list(
         dom = 't',
         paging = FALSE,
-        scrollX = TRUE
+        scrollX = TRUE,
+        columnDefs = list(
+          list(className = 'dt-center', targets = '_all'),
+          # Hide importance columns to keep it compact - ranks are more interpretable
+          list(visible = FALSE, targets = if ("Label" %in% names(comparison)) c(4, 5) else c(3, 4))
+        )
       ),
-      class = 'compact stripe hover'
-    )
+      class = 'compact hover',
+      rownames = FALSE
+    ) %>%
+      formatStyle(
+        tree_rank_col,
+        backgroundColor = styleInterval(
+          c(3, 6, 10),
+          c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')  # green, yellow, light yellow, grey
+        ),
+        fontWeight = styleInterval(c(3), c('bold', 'normal'))
+      ) %>%
+      formatStyle(
+        rf_rank_col,
+        backgroundColor = styleInterval(
+          c(3, 6, 10),
+          c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')
+        ),
+        fontWeight = styleInterval(c(3), c('bold', 'normal'))
+      ) %>%
+      formatStyle(
+        'Variable',
+        fontWeight = 'bold',
+        fontSize = '0.9em'
+      )
   })
 
   # -------------------------------------------------------------------------
