@@ -228,7 +228,7 @@ ui <- page_sidebar(
                 "Google (Gemini)" = "gemini",
                 "OpenAI (GPT)" = "openai"
               ),
-              selected = "azure"
+              selected = "openai"
             )
           )
         },
@@ -2806,11 +2806,11 @@ server <- function(input, output, session) {
         )
 
       } else if (input$ai_provider == "gemini") {
-        api_key <- Sys.getenv("GEMINI_API_KEY")
+        api_key <- Sys.getenv("GOOGLE_API_KEY")
         if (api_key == "") {
           stop(paste0(
             "Google Gemini API key not found.\n\n",
-            "Please set the GEMINI_API_KEY environment variable.\n\n",
+            "Please set the GOOGLE_API_KEY environment variable.\n\n",
             "You can get an API key from: https://aistudio.google.com/apikey"
           ))
         }
