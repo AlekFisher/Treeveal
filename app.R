@@ -1,4 +1,4 @@
-# Treeveal: AI-Powered Decision Tree Analysis
+# Dendro: AI-Powered Decision Tree Analysis
 # An interactive Shiny application for building, visualizing, and interpreting decision trees
 # with AI assistance via ellmer
 
@@ -31,7 +31,7 @@ PRODUCTION_MODE <- FALSE
 
 ui <- page_sidebar(
   title = tags$span(
-    "Treeveal",
+    "Dendro",
     # Show production mode indicator in title
     if (PRODUCTION_MODE) {
       tags$span(
@@ -50,16 +50,16 @@ ui <- page_sidebar(
   theme = bs_theme(
     version = 5,
     bootswatch = "default",
-    primary = "#0071e3",
-    secondary = "#86868b",
-    success = "#34c759",
-    info = "#5ac8fa",
-    warning = "#ff9f0a",
-    danger = "#ff3b30",
+    primary = "#6366f1",
+    secondary = "#71717a",
+    success = "#10b981",
+    info = "#06b6d4",
+    warning = "#f59e0b",
+    danger = "#ef4444",
     base_font = font_google("Inter"),
     heading_font = font_google("Inter"),
     code_font = font_google("JetBrains Mono"),
-    "body-bg" = "#f5f5f7",
+    "body-bg" = "#f8f7ff",
     "card-bg" = "#ffffff",
     "border-radius" = "12px"
   ) |> bs_add_rules(sass::sass_file("www/styles.css")),
@@ -141,6 +141,55 @@ ui <- page_sidebar(
             ),
             uiOutput("prefix_buttons")
           )
+        )
+      ),
+
+      accordion_panel(
+        title = "Factor Levels",
+        value = "factor_panel",
+        icon = bsicons::bs_icon("list-ol"),
+
+        conditionalPanel(
+          condition = "!output.data_loaded",
+          helpText(class = "small text-muted", "Upload data to manage factor levels")
+        ),
+
+        conditionalPanel(
+          condition = "output.data_loaded",
+
+          helpText(
+            class = "small text-muted mb-2",
+            "Reorder factor levels (e.g., Low < Medium < High). The first level is the reference."
+          ),
+
+          selectInput(
+            "factor_var_select",
+            "Factor Variable",
+            choices = NULL
+          ),
+
+          uiOutput("factor_levels_display"),
+
+          selectInput(
+            "factor_level_to_move",
+            NULL,
+            choices = NULL,
+            width = "100%"
+          ),
+
+          div(
+            class = "d-flex gap-1 mt-1",
+            actionButton("factor_move_up", NULL, icon = icon("chevron-up"),
+                          class = "btn-sm btn-outline-secondary flex-fill"),
+            actionButton("factor_move_down", NULL, icon = icon("chevron-down"),
+                          class = "btn-sm btn-outline-secondary flex-fill"),
+            actionButton("factor_set_ref", "Set as First",
+                          class = "btn-sm btn-outline-secondary flex-fill")
+          ),
+
+          actionButton("factor_apply", "Apply Order",
+                        class = "btn-primary btn-sm w-100 mt-2",
+                        icon = icon("check"))
         )
       ),
 
@@ -606,7 +655,7 @@ ui <- page_sidebar(
 
           div(
             class = "mb-4",
-            h4("Treeveal User Guide"),
+            h4("Dendro User Guide"),
             p(class = "text-muted", "Everything you need to know about decision trees and how to use this app.")
           ),
 
@@ -869,7 +918,8 @@ server <- function(input, output, session) {
     model = NULL,
     chat_history = list(),
     chat = NULL,  # ellmer chat object
-    show_ai_panel = FALSE  # AI chat panel visibility
+    show_ai_panel = FALSE,  # AI chat panel visibility
+    factor_levels_pending = list()  # pending factor level reorders
   )
 
   # -------------------------------------------------------------------------
@@ -948,6 +998,7 @@ server <- function(input, output, session) {
       rv$model <- NULL
       rv$chat_history <- list()
       rv$chat <- NULL
+      rv$factor_levels_pending <- list()
 
       showNotification(
         paste0("Data loaded successfully! (", file_ext, " file, ", nrow(data), " rows)"),
@@ -1138,6 +1189,7 @@ server <- function(input, output, session) {
       rv$model <- NULL
       rv$chat_history <- list()
       rv$chat <- NULL
+      rv$factor_levels_pending <- list()
 
       showNotification("Demo dataset (HCP GLP-1 Attitudes Survey) loaded!", type = "message")
     }
@@ -1253,6 +1305,148 @@ server <- function(input, output, session) {
   })
 
   # -------------------------------------------------------------------------
+  # Factor Level Management
+  # -------------------------------------------------------------------------
+
+  # Update factor variable selector when data changes
+  observe({
+    req(rv$data)
+    factor_vars <- names(rv$data)[sapply(rv$data, is.factor)]
+    if (length(factor_vars) == 0) {
+      updateSelectInput(session, "factor_var_select",
+                        choices = c("No factor variables" = ""),
+                        selected = "")
+    } else {
+      updateSelectInput(session, "factor_var_select",
+                        choices = factor_vars,
+                        selected = factor_vars[1])
+    }
+  })
+
+  # Get current levels for selected factor (pending or actual)
+  current_factor_levels <- reactive({
+    req(input$factor_var_select, rv$data)
+    var <- input$factor_var_select
+    if (var == "" || !var %in% names(rv$data)) return(NULL)
+    if (!is.factor(rv$data[[var]])) return(NULL)
+
+    pending <- rv$factor_levels_pending
+    if (var %in% names(pending)) {
+      pending[[var]]
+    } else {
+      levels(rv$data[[var]])
+    }
+  })
+
+  # Display current levels as numbered list
+  output$factor_levels_display <- renderUI({
+    lvls <- current_factor_levels()
+    if (is.null(lvls)) {
+      return(helpText(class = "small text-muted", "Select a factor variable above"))
+    }
+
+    level_items <- lapply(seq_along(lvls), function(i) {
+      div(
+        class = "d-flex align-items-center py-1 px-2",
+        style = if (i == 1) "font-weight: 600;" else "",
+        tags$small(class = "text-muted me-2", style = "min-width: 20px;", paste0(i, ".")),
+        span(style = "font-size: 0.85em;", lvls[i]),
+        if (i == 1) tags$small(class = "ms-auto text-muted fst-italic", "ref") else NULL
+      )
+    })
+
+    div(
+      class = "border rounded mb-2",
+      style = "max-height: 200px; overflow-y: auto;",
+      tagList(level_items)
+    )
+  })
+
+  # Update the level-to-move selector
+  observe({
+    lvls <- current_factor_levels()
+    if (is.null(lvls)) return()
+    selected <- input$factor_level_to_move
+    if (is.null(selected) || !selected %in% lvls) selected <- lvls[1]
+    updateSelectInput(session, "factor_level_to_move", choices = lvls, selected = selected)
+  })
+
+  # Move level up
+  observeEvent(input$factor_move_up, {
+    req(input$factor_var_select, input$factor_level_to_move)
+    var <- input$factor_var_select
+    lvls <- current_factor_levels()
+    if (is.null(lvls)) return()
+
+    idx <- which(lvls == input$factor_level_to_move)
+    if (length(idx) == 0 || idx <= 1) return()
+
+    lvls[c(idx - 1, idx)] <- lvls[c(idx, idx - 1)]
+    pending <- rv$factor_levels_pending
+    pending[[var]] <- lvls
+    rv$factor_levels_pending <- pending
+  })
+
+  # Move level down
+  observeEvent(input$factor_move_down, {
+    req(input$factor_var_select, input$factor_level_to_move)
+    var <- input$factor_var_select
+    lvls <- current_factor_levels()
+    if (is.null(lvls)) return()
+
+    idx <- which(lvls == input$factor_level_to_move)
+    if (length(idx) == 0 || idx >= length(lvls)) return()
+
+    lvls[c(idx, idx + 1)] <- lvls[c(idx + 1, idx)]
+    pending <- rv$factor_levels_pending
+    pending[[var]] <- lvls
+    rv$factor_levels_pending <- pending
+  })
+
+  # Set as reference (move to position 1)
+  observeEvent(input$factor_set_ref, {
+    req(input$factor_var_select, input$factor_level_to_move)
+    var <- input$factor_var_select
+    lvls <- current_factor_levels()
+    if (is.null(lvls)) return()
+
+    selected <- input$factor_level_to_move
+    lvls <- c(selected, setdiff(lvls, selected))
+    pending <- rv$factor_levels_pending
+    pending[[var]] <- lvls
+    rv$factor_levels_pending <- pending
+  })
+
+  # Apply factor level reorder
+  observeEvent(input$factor_apply, {
+    req(input$factor_var_select, rv$data)
+    var <- input$factor_var_select
+
+    if (!var %in% names(rv$factor_levels_pending)) {
+      showNotification("No changes to apply", type = "message")
+      return()
+    }
+
+    new_levels <- rv$factor_levels_pending[[var]]
+    rv$data[[var]] <- factor(rv$data[[var]], levels = new_levels)
+
+    # Clear pending for this variable
+    pending <- rv$factor_levels_pending
+    pending[[var]] <- NULL
+    rv$factor_levels_pending <- pending
+
+    # Reset model since data changed
+    rv$model <- NULL
+    rv$chat <- NULL
+    rv$chat_history <- list()
+
+    showNotification(
+      paste0("Factor levels reordered for '", var, "'"),
+      type = "message"
+    )
+  })
+
+  # -------------------------------------------------------------------------
   # AI Panel Toggle
   # -------------------------------------------------------------------------
 
@@ -1353,7 +1547,7 @@ server <- function(input, output, session) {
           div(
             id = "chat_container",
             class = "flex-grow-1",
-            style = "overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #f8f9fa; min-height: 0;",
+            style = "overflow-y: auto; border: 1px solid #e8e5f5; border-radius: 12px; padding: 15px; background: linear-gradient(180deg, #f1f0fb, #f8f7ff); min-height: 0;",
             uiOutput("chat_history")
           ),
 
@@ -1404,7 +1598,7 @@ server <- function(input, output, session) {
     if (input$ai_provider == "azure") {
       # Azure OpenAI - model comes from environment variable
       azure_model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
-      if (azure_model == "") azure_model <- "gpt-4o"  # Default display name
+      if (azure_model == "") azure_model <- "gpt-5-mini"  # Default display name
       updateSelectInput(
         session, "ai_model",
         choices = setNames(azure_model, paste0("Azure: ", azure_model)),
@@ -1751,7 +1945,7 @@ server <- function(input, output, session) {
         'Status',
         backgroundColor = styleEqual(
           c('OK', 'Warning', 'Issue'),
-          c('#e8f9ed', '#fff8e8', '#ffe8e8')
+          c('#d1fae5', '#fef3c7', '#fee2e2')
         ),
         fontWeight = 'bold'
       )
@@ -1780,7 +1974,7 @@ server <- function(input, output, session) {
         'Status',
         backgroundColor = styleEqual(
           c('OK', 'Low', 'Moderate', 'High'),
-          c('#e8f9ed', '#e8f9ed', '#fff8e8', '#ffe8e8')
+          c('#d1fae5', '#d1fae5', '#fef3c7', '#fee2e2')
         )
       )
   })
@@ -1807,7 +2001,7 @@ server <- function(input, output, session) {
         'Status',
         backgroundColor = styleEqual(
           c('OK', 'Near-Constant', 'Constant', 'No Data'),
-          c('#e8f9ed', '#fff8e8', '#ffe8e8', '#ffe8e8')
+          c('#d1fae5', '#fef3c7', '#fee2e2', '#fee2e2')
         )
       )
   })
@@ -2104,7 +2298,7 @@ server <- function(input, output, session) {
       mutate(Variable = factor(Variable, levels = rev(Variable)))
 
     ggplot(importance_df, aes(x = Importance, y = Variable)) +
-      geom_col(fill = "#18bc9c") +
+      geom_col(fill = "#6366f1") +
       theme_minimal() +
       theme(
         axis.title.y = element_blank(),
@@ -2229,7 +2423,7 @@ server <- function(input, output, session) {
       }
 
       ggplot(imp_df, aes(x = Importance, y = DisplayName)) +
-        geom_col(fill = "#5856d6") +
+        geom_col(fill = "#8b5cf6") +
         theme_minimal(base_size = 12) +
         theme(
           axis.title.y = element_blank(),
@@ -2291,7 +2485,7 @@ server <- function(input, output, session) {
             rank_col,
             backgroundColor = styleInterval(
               c(3, 6, 10),
-              c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')
+              c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')
             ),
             fontWeight = styleInterval(c(3), c('bold', 'normal'))
           ) %>%
@@ -2384,7 +2578,7 @@ server <- function(input, output, session) {
         tree_rank_col,
         backgroundColor = styleInterval(
           c(3, 6, 10),
-          c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')  # green, yellow, light yellow, grey
+          c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')  # green, yellow, light yellow, grey
         ),
         fontWeight = styleInterval(c(3), c('bold', 'normal'))
       ) %>%
@@ -2392,7 +2586,7 @@ server <- function(input, output, session) {
         rf_rank_col,
         backgroundColor = styleInterval(
           c(3, 6, 10),
-          c('#d4edda', '#fff3cd', '#ffeeba', '#f8f9fa')
+          c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')
         ),
         fontWeight = styleInterval(c(3), c('bold', 'normal'))
       ) %>%
@@ -2487,7 +2681,7 @@ server <- function(input, output, session) {
           imp_temp <- tempfile(fileext = ".png")
           png(imp_temp, width = 10, height = 6, units = "in", res = 150)
           p <- ggplot(importance_df, aes(x = Importance, y = DisplayName)) +
-            geom_col(fill = "#0071e3") +
+            geom_col(fill = "#6366f1") +
             theme_minimal(base_size = 14) +
             theme(
               axis.title.y = element_blank(),
@@ -2977,7 +3171,7 @@ server <- function(input, output, session) {
           class = "d-flex justify-content-end mb-3",
           div(
             class = "p-3 rounded-3",
-            style = "background-color: #2c3e50; color: white; max-width: 80%;",
+            style = "background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; max-width: 80%;",
             HTML(markdown::markdownToHTML(
               text = msg$content,
               fragment.only = TRUE
@@ -2989,7 +3183,7 @@ server <- function(input, output, session) {
           class = "d-flex justify-content-start mb-3",
           div(
             class = "p-3 rounded-3",
-            style = "background-color: white; border: 1px solid #dee2e6; max-width: 80%;",
+            style = "background-color: white; border: 1px solid #e8e5f5; border-left: 3px solid #a5b4fc; max-width: 80%;",
             HTML(markdown::markdownToHTML(
               text = msg$content,
               fragment.only = TRUE

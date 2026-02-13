@@ -6,17 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a collection of R projects. Currently contains one project:
 
-### Treeveal
+### Dendro
 
-An R Shiny application for interactive decision tree analysis with AI-powered interpretation. Located in `Treeveal/`.
+An R Shiny application for interactive decision tree analysis with AI-powered interpretation. Located in `Dendro/`.
 
 ## Running the Application
 
 ```r
-# From the Treeveal directory
+# From the Dendro directory
 shiny::runApp()
 
-# Or open Treeveal.Rproj in RStudio and click "Run App"
+# Or open Dendro.Rproj in RStudio and click "Run App"
 ```
 
 ## Required R Packages
@@ -32,7 +32,7 @@ API keys for AI providers should be set in `.Renviron`:
 - `GOOGLE_API_KEY` - Gemini
 - `OPENAI_API_KEY` - GPT
 
-## Architecture (Treeveal)
+## Architecture (Dendro)
 
 **Single-file Shiny app** (`app.R`) using reactive programming:
 
