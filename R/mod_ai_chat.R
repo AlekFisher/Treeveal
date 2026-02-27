@@ -116,7 +116,7 @@ ai_chat_card_ui <- function(id) {
         div(
           id = "chat_container",
           class = "flex-grow-1",
-          style = "overflow-y: auto; border: 1px solid #e8e5f5; border-radius: 12px; padding: 15px; background: linear-gradient(180deg, #f1f0fb, #f8f7ff); min-height: 0;",
+          style = paste0("overflow-y: auto; border: 1px solid ", THEME_BORDER, "; border-radius: 6px; padding: 15px; background: ", THEME_CHAT_CONTAINER_BG, "; min-height: 0;"),
           uiOutput(ns("chat_history"))
         ),
 
@@ -579,7 +579,7 @@ ai_chat_server <- function(id, rv, production_mode) {
             class = "d-flex justify-content-end mb-3",
             div(
               class = "p-3 rounded-3",
-              style = "background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; max-width: 80%;",
+              style = paste0("background: ", THEME_CHAT_USER_BG, "; color: white; max-width: 80%;"),
               HTML(markdown::markdownToHTML(
                 text = msg$content,
                 fragment.only = TRUE
@@ -591,7 +591,7 @@ ai_chat_server <- function(id, rv, production_mode) {
             class = "d-flex justify-content-start mb-3",
             div(
               class = "p-3 rounded-3",
-              style = "background-color: white; border: 1px solid #e8e5f5; border-left: 3px solid #a5b4fc; max-width: 80%;",
+              style = paste0("background-color: white; border: 1px solid ", THEME_CHAT_AI_BORDER, "; border-left: 3px solid ", THEME_CHAT_AI_LEFT, "; max-width: 80%;"),
               HTML(markdown::markdownToHTML(
                 text = msg$content,
                 fragment.only = TRUE

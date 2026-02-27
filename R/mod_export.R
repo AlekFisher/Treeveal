@@ -79,7 +79,7 @@ create_export_handler <- function(rv) {
           imp_temp <- tempfile(fileext = ".png")
           png(imp_temp, width = 10, height = 6, units = "in", res = 150)
           p <- ggplot(importance_df, aes(x = Importance, y = DisplayName)) +
-            geom_col(fill = "#6366f1") +
+            geom_col(fill = THEME_CHART_PRIMARY) +
             theme_minimal(base_size = 14) +
             theme(
               axis.title.y = element_blank(),

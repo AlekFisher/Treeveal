@@ -321,7 +321,7 @@ data_quality_server <- function(id, rv) {
           'Status',
           backgroundColor = styleEqual(
             c('OK', 'Warning', 'Issue'),
-            c('#d1fae5', '#fef3c7', '#fee2e2')
+            c(THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_DANGER)
           ),
           fontWeight = 'bold'
         )
@@ -350,7 +350,7 @@ data_quality_server <- function(id, rv) {
           'Status',
           backgroundColor = styleEqual(
             c('OK', 'Low', 'Moderate', 'High'),
-            c('#d1fae5', '#d1fae5', '#fef3c7', '#fee2e2')
+            c(THEME_STATUS_OK, THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_DANGER)
           )
         )
     })
@@ -377,7 +377,7 @@ data_quality_server <- function(id, rv) {
           'Status',
           backgroundColor = styleEqual(
             c('OK', 'Near-Constant', 'Constant', 'No Data'),
-            c('#d1fae5', '#fef3c7', '#fee2e2', '#fee2e2')
+            c(THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_DANGER, THEME_STATUS_DANGER)
           )
         )
     })

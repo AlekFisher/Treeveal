@@ -118,7 +118,7 @@ model_details_server <- function(id, rv) {
         dplyr::mutate(Variable = factor(Variable, levels = rev(Variable)))
 
       ggplot(importance_df, aes(x = Importance, y = Variable)) +
-        geom_col(fill = "#6366f1") +
+        geom_col(fill = THEME_CHART_PRIMARY) +
         theme_minimal() +
         theme(
           axis.title.y = element_blank(),
@@ -232,7 +232,7 @@ model_details_server <- function(id, rv) {
         }
 
         ggplot(imp_df, aes(x = Importance, y = DisplayName)) +
-          geom_col(fill = "#8b5cf6") +
+          geom_col(fill = THEME_CHART_SECONDARY) +
           theme_minimal(base_size = 12) +
           theme(
             axis.title.y = element_blank(),
@@ -292,7 +292,7 @@ model_details_server <- function(id, rv) {
               'Tree Rank',
               backgroundColor = styleInterval(
                 c(3, 6, 10),
-                c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')
+                c(THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_WARNING, THEME_STATUS_NEUTRAL)
               ),
               fontWeight = styleInterval(c(3), c('bold', 'normal'))
             ) %>%
@@ -379,7 +379,7 @@ model_details_server <- function(id, rv) {
           'Tree Rank',
           backgroundColor = styleInterval(
             c(3, 6, 10),
-            c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')
+            c(THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_WARNING, THEME_STATUS_NEUTRAL)
           ),
           fontWeight = styleInterval(c(3), c('bold', 'normal'))
         ) %>%
@@ -387,7 +387,7 @@ model_details_server <- function(id, rv) {
           'RF Rank',
           backgroundColor = styleInterval(
             c(3, 6, 10),
-            c('#d1fae5', '#fef3c7', '#fde68a', '#f1f0fb')
+            c(THEME_STATUS_OK, THEME_STATUS_WARNING, THEME_STATUS_WARNING, THEME_STATUS_NEUTRAL)
           ),
           fontWeight = styleInterval(c(3), c('bold', 'normal'))
         ) %>%

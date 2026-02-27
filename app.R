@@ -52,21 +52,25 @@ ui <- page_sidebar(
   theme = bs_theme(
     version = 5,
     bootswatch = "default",
-    primary = "#6366f1",
-    secondary = "#71717a",
-    success = "#10b981",
-    info = "#06b6d4",
-    warning = "#f59e0b",
-    danger = "#ef4444",
+    primary = "#2563eb",
+    secondary = "#737373",
+    success = "#059669",
+    info = "#0284c7",
+    warning = "#d97706",
+    danger = "#dc2626",
     base_font = font_google("Inter"),
     heading_font = font_google("Inter"),
     code_font = font_google("JetBrains Mono"),
-    "body-bg" = "#f8f7ff",
+    "body-bg" = "#ffffff",
     "card-bg" = "#ffffff",
-    "border-radius" = "12px"
-  ) |> bs_add_rules(sass::sass_file("www/styles.css")),
+    "border-radius" = "8px",
+    "border-color" = "#e5e5e5",
+    "input-border-color" = "#e5e5e5",
+    "card-border-color" = "#f0f0f0"
+  ),
 
   tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "theme.css"),
     tags$style(HTML("
       #shiny-disconnected-overlay, #ss-connect-dialog { display: none !important; }
     "))
