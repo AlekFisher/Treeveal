@@ -333,26 +333,25 @@ ai_chat_server <- function(id, rv, production_mode) {
         persona_instructions <- switch(input$user_persona,
           "executive" = paste0(
             "\n\nRESPONSE STYLE - EXECUTIVE SUMMARY:\n",
-            "- Be extremely concise - aim for 3-5 bullet points maximum\n",
+            "- STRICTLY INTERPRETATION ONLY — do NOT suggest next steps, additional analyses, parameter changes, or methodological improvements\n",
+            "- Be extremely concise — aim for 3-5 bullet points maximum\n",
             "- Lead with the single most important finding\n",
-            "- Focus on 'so what?' - business implications and recommended actions\n",
-            "- Avoid statistical jargon entirely - use plain business language\n",
+            "- Focus on what the tree found and what it means for the business or program\n",
+            "- Avoid statistical jargon entirely — use plain business language\n",
             "- Use specific numbers only when they drive a decision (e.g., '81% of high prescribers...')\n",
-            "- Format: Brief intro sentence, then bullet points, then one-line recommendation\n",
-            "- Total response should be readable in under 30 seconds\n",
-            "- Do NOT offer to run additional analyses or suggest follow-up statistical work"
+            "- Format: Brief intro sentence, then bullet points, then one-line bottom-line takeaway\n",
+            "- Total response should be readable in under 30 seconds"
           ),
           "project_team" = paste0(
             "\n\nRESPONSE STYLE - PROJECT TEAM:\n",
-            "- Write clear, flowing paragraphs suitable for a client report\n",
-            "- Explain findings in accessible language - assume smart non-statisticians\n",
+            "- STRICTLY INTERPRETATION ONLY — do NOT suggest running more analyses, parameter changes, or methodological improvements\n",
+            "- Structure responses with markdown headers (##) and bullet lists — report-ready formatting\n",
+            "- Explain findings in accessible language — assume smart non-statisticians\n",
             "- Include key numbers and percentages that tell the story\n",
-            "- Connect findings to practical implications\n",
-            "- Use 2-3 short paragraphs, not lengthy technical explanations\n",
-            "- Avoid statistical terminology unless you briefly explain it\n",
-            "- The output should be something they could paste into a PowerPoint or report\n",
-            "- Do NOT end with offers to run additional analyses - you cannot execute code or run new models in this tool\n",
-            "- If relevant, you may mention what additional analyses COULD be done outside this tool, but frame it as 'for further investigation, your analyst could...' rather than offering to do it yourself"
+            "- Connect findings to practical implications and actionable insights\n",
+            "- Keep sections short and scannable — no lengthy paragraphs\n",
+            "- The output should be something that could be pasted into a PowerPoint or report\n",
+            "- Do NOT end with suggestions for additional analyses or next steps"
           ),
           "statistician" = paste0(
             "\n\nRESPONSE STYLE - STATISTICIAN:\n",
@@ -362,16 +361,15 @@ ai_chat_server <- function(id, rv, production_mode) {
             "- Compare decision tree results with Random Forest importance where relevant\n",
             "- Note methodological considerations and limitations\n",
             "- Use proper statistical terminology\n",
-            "- IMPORTANT: You can only interpret the model that has already been built - you cannot run additional analyses, execute code, or build new models\n",
-            "- If suggesting additional analyses (cross-validation, sensitivity analysis, etc.), clearly frame these as recommendations for the analyst to pursue separately, NOT something you can do in this conversation\n",
-            "- For example, say 'I would recommend validating with k-fold CV' rather than 'I can compute cross-validated performance'"
+            "- You MAY suggest next steps: parameter tuning, variables to explore, validation approaches\n",
+            "- Frame suggestions as recommendations for the analyst (e.g., 'I would recommend validating with k-fold CV'), not as something you can do in this conversation"
           ),
           paste0(
             "\n\nRESPONSE STYLE:\n",
             "- Be clear and concise\n",
-            "- Use plain language\n",
-            "- Focus on actionable insights\n",
-            "- Do not offer to run additional analyses"
+            "- Use bullet points and markdown headers\n",
+            "- Focus on actionable insights from the existing model\n",
+            "- Do not suggest additional analyses"
           )
         )
 
@@ -386,11 +384,14 @@ ai_chat_server <- function(id, rv, production_mode) {
             ""
           },
           "\n\nIMPORTANT INSTRUCTIONS:\n",
-          "- When discussing variables, ALWAYS use their descriptive labels (from the data dictionary) rather than raw variable names.\n",
-          "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'.\n",
-          "- Provide clear, actionable insights. Use specific numbers from the model when relevant.\n",
-          "- Be conversational but precise. If the user asks about something not shown in the model, ",
-          "explain what additional analysis might be needed.",
+          "- When discussing variables, ALWAYS use their descriptive labels (from the data dictionary) rather than raw variable names\n",
+          "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'\n",
+          "\nFORMATTING RULES (apply to all responses):\n",
+          "- Lead with key takeaways as bullet points\n",
+          "- Use markdown headers (##) and bullet lists — avoid long unbroken paragraphs\n",
+          "- **Bold** important findings\n",
+          "- Embed numbers inline in context — do not dump raw statistics\n",
+          "- Keep responses concise — quality over quantity\n",
           persona_instructions
         )
 
