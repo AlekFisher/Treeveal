@@ -112,6 +112,9 @@ ai_chat_card_ui <- function(id) {
         class = "d-flex flex-column flex-grow-1",
         style = "min-height: 0;",
 
+        # Provider warning for non-Azure + uploaded data
+        uiOutput(ns("provider_warning")),
+
         # Chat history display
         div(
           id = "chat_container",
@@ -213,6 +216,31 @@ ai_chat_server <- function(id, rv, production_mode) {
     # Reset chat when persona changes
     observeEvent(input$user_persona, {
       rv$chat <- NULL
+    })
+
+    # --- Dev mode: auto-switch to Azure when switching to uploaded data ---
+    observeEvent(rv$is_demo_data, {
+      if (!production_mode && !rv$is_demo_data &&
+          !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        updateSelectInput(session, "ai_provider", selected = "azure")
+        rv$chat <- NULL
+        showNotification(
+          "Switched to Azure OpenAI \u2014 non-Azure providers are only available with demo datasets.",
+          type = "warning", duration = 6
+        )
+      }
+    })
+
+    # --- Dev mode: warning banner when non-Azure + uploaded data ---
+    output$provider_warning <- renderUI({
+      if (!production_mode && !rv$is_demo_data &&
+          !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        div(class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
+          bsicons::bs_icon("shield-exclamation"),
+          " Non-Azure providers are only available with demo datasets. ",
+          "Please switch to Azure OpenAI for uploaded data."
+        )
+      }
     })
 
     # --- Dictionary Context ---
@@ -465,6 +493,20 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Send message to AI ---
     send_to_ai <- function(message) {
       req(rv$model)
+
+      # Dev mode guard: block non-Azure providers with uploaded data
+      if (!production_mode && !rv$is_demo_data &&
+          !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        rv$chat_history <- c(rv$chat_history, list(
+          list(role = "assistant", content = paste0(
+            "\u26a0\ufe0f **Data Security Notice**\n\n",
+            "Non-Azure AI providers are only available with demo datasets. ",
+            "Your uploaded data cannot be sent to external AI services.\n\n",
+            "Please switch to **Azure OpenAI** in the sidebar to continue."
+          ))
+        ))
+        return(invisible(NULL))
+      }
 
       rv$chat_history <- c(rv$chat_history, list(
         list(role = "user", content = message)
