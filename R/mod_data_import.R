@@ -24,7 +24,15 @@ data_import_ui <- function(id) {
       "Dictionary should have columns: variable, label, and optionally notes"
     ),
 
-    checkboxInput(ns("use_demo"), "Use Demo Dataset (HCP GLP-1 Prescribing)", value = FALSE),
+    selectInput(
+      ns("demo_dataset"), "Demo Dataset",
+      choices = c("None" = "",
+                  "HCP GLP-1 Prescribing Survey" = "hcp",
+                  "Patient Readmission" = "readmission",
+                  "Treatment Response" = "treatment"),
+      selected = ""
+    ),
+    uiOutput(ns("demo_description")),
 
     conditionalPanel(
       condition = "output.data_loaded",
@@ -142,6 +150,8 @@ data_import_server <- function(id, rv) {
         rv$factor_levels_pending <- list()
         rv$is_demo_data <- FALSE
 
+        updateSelectInput(session, "demo_dataset", selected = "")
+
         showNotification(
           paste0("Data loaded successfully! (", file_ext, " file, ", nrow(data), " rows)"),
           type = "message"
@@ -171,9 +181,10 @@ data_import_server <- function(id, rv) {
     })
 
     # --- Demo Data ---
-    observeEvent(input$use_demo, {
-      if (input$use_demo) {
-        demo <- generate_demo_dataset()
+    observeEvent(input$demo_dataset, {
+      if (input$demo_dataset != "") {
+        demo <- generate_demo_dataset(input$demo_dataset)
+        meta <- get_demo_datasets()[[input$demo_dataset]]
 
         rv$data <- demo$data
         rv$data_dict <- demo$dict
@@ -183,8 +194,42 @@ data_import_server <- function(id, rv) {
         rv$factor_levels_pending <- list()
         rv$is_demo_data <- TRUE
 
-        showNotification("Demo dataset (HCP GLP-1 Attitudes Survey) loaded!", type = "message")
+        showNotification(
+          paste0(meta$name, " loaded! (", meta$n_obs, " obs, ", meta$n_vars, " vars, ", meta$type, ")"),
+          type = "message"
+        )
+      } else if (isTRUE(rv$is_demo_data)) {
+        rv$data <- NULL
+        rv$data_dict <- NULL
+        rv$model <- NULL
+        rv$chat_history <- list()
+        rv$chat <- NULL
+        rv$factor_levels_pending <- list()
+        rv$is_demo_data <- FALSE
       }
+    }, ignoreInit = TRUE)
+
+    # --- Demo Description ---
+    output$demo_description <- renderUI({
+      req(input$demo_dataset != "")
+      meta <- get_demo_datasets()[[input$demo_dataset]]
+      if (is.null(meta)) return(NULL)
+
+      badge_color <- if (meta$type == "Classification") "primary" else "info"
+
+      div(
+        style = paste0(
+          "background: ", THEME_BG_SECONDARY, "; ",
+          "border: 1px solid ", THEME_BORDER_LIGHT, "; ",
+          "border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; font-size: 0.82em;"
+        ),
+        div(
+          class = "d-flex align-items-center mb-1",
+          span(class = paste0("badge bg-", badge_color, " me-2"), meta$type),
+          span(class = "text-muted", paste0(meta$n_obs, " obs \u00d7 ", meta$n_vars, " vars"))
+        ),
+        p(class = "mb-0 text-muted", style = "line-height: 1.3;", meta$description)
+      )
     })
 
     # --- Variable Selectors ---

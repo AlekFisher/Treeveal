@@ -122,6 +122,16 @@ data_quality_ui <- function(id) {
                 icon = bsicons::bs_icon("link-45deg"),
                 p(class = "small text-muted", "Highly correlated predictors. Common in attitudinal data - not necessarily a problem, but good to be aware of."),
                 DTOutput(ns("dq_correlation_table"))
+              ),
+
+              accordion_panel(
+                title = "Outliers",
+                value = "outliers",
+                icon = bsicons::bs_icon("exclamation-diamond"),
+                p(class = "small text-muted",
+                  "Numeric variables checked for outliers using the IQR method. ",
+                  "Mild: beyond 1.5\u00d7 IQR. Extreme: beyond 3\u00d7 IQR. Informational only."),
+                DTOutput(ns("dq_outlier_table"))
               )
             )
           )
@@ -231,14 +241,71 @@ data_quality_server <- function(id, rv) {
         }
       }
 
+      # --- Outlier Analysis (IQR method, numeric variables only) ---
+      outlier_info <- data.frame(
+        Variable = character(), Q1 = numeric(), Q3 = numeric(), IQR = numeric(),
+        N_Mild = integer(), Pct_Mild = numeric(),
+        N_Extreme = integer(), Pct_Extreme = numeric(),
+        Status = character(), stringsAsFactors = FALSE
+      )
+
+      for (v in numeric_vars) {
+        x <- na.omit(df[[v]])
+        if (length(x) < 4) next
+        q1 <- quantile(x, 0.25)
+        q3 <- quantile(x, 0.75)
+        iqr_val <- q3 - q1
+        if (iqr_val == 0) next
+
+        extreme_low <- q1 - 3 * iqr_val
+        extreme_high <- q3 + 3 * iqr_val
+        mild_low <- q1 - 1.5 * iqr_val
+        mild_high <- q3 + 1.5 * iqr_val
+
+        is_extreme <- x < extreme_low | x > extreme_high
+        is_mild <- (x < mild_low | x > mild_high) & !is_extreme
+
+        n_total <- length(x)
+        n_extreme <- sum(is_extreme)
+        n_mild <- sum(is_mild)
+
+        status <- if (n_extreme / n_total > 0.05) "Extreme"
+                  else if ((n_mild + n_extreme) / n_total > 0.05) "Mild"
+                  else "OK"
+
+        outlier_info <- rbind(outlier_info, data.frame(
+          Variable = v,
+          Q1 = round(q1, 2),
+          Q3 = round(q3, 2),
+          IQR = round(iqr_val, 2),
+          N_Mild = n_mild,
+          Pct_Mild = round(n_mild / n_total * 100, 1),
+          N_Extreme = n_extreme,
+          Pct_Extreme = round(n_extreme / n_total * 100, 1),
+          Status = status,
+          stringsAsFactors = FALSE
+        ))
+      }
+
       # --- Variable Summary ---
       var_summary <- merge(missing_info, variance_info, by = "Variable")
+      # Left-join outlier Pct_Extreme into var_summary
+      if (nrow(outlier_info) > 0) {
+        outlier_match <- match(var_summary$Variable, outlier_info$Variable)
+        var_summary$Pct_Extreme <- ifelse(
+          is.na(outlier_match), 0, outlier_info$Pct_Extreme[outlier_match]
+        )
+      } else {
+        var_summary$Pct_Extreme <- 0
+      }
+
       var_summary$Overall_Status <- dplyr::case_when(
         var_summary$Variance_Status == "Constant" ~ "Issue",
         var_summary$Variance_Status == "No Data" ~ "Issue",
         var_summary$Pct_Missing > 50 ~ "Warning",
         var_summary$Variance_Status == "Near-Constant" ~ "Warning",
         var_summary$Pct_Missing > 20 ~ "Warning",
+        var_summary$Pct_Extreme > 5 ~ "Warning",
         TRUE ~ "OK"
       )
 
@@ -261,6 +328,7 @@ data_quality_server <- function(id, rv) {
         missing = missing_info,
         variance = variance_info,
         correlation = high_corr,
+        outliers = outlier_info,
         summary = var_summary,
         n_ok = n_ok,
         n_warning = n_warning,
@@ -399,6 +467,50 @@ data_quality_server <- function(id, rv) {
         options = list(pageLength = 10, dom = 'tip'),
         class = 'compact stripe'
       )
+    })
+
+    # Outlier table
+    output$dq_outlier_table <- renderDT({
+      req(data_quality())
+
+      df <- data_quality()$outliers
+
+      if (nrow(df) == 0 || all(df$Status == "OK")) {
+        return(datatable(
+          data.frame(Message = "No outliers detected"),
+          options = list(dom = 't'),
+          rownames = FALSE
+        ))
+      }
+
+      df <- df[df$Status != "OK", ]
+      df <- df[order(-df$Pct_Extreme), ]
+
+      display_df <- data.frame(
+        Variable = df$Variable,
+        `Mild (n)` = df$N_Mild,
+        `Mild (%)` = df$Pct_Mild,
+        `Extreme (n)` = df$N_Extreme,
+        `Extreme (%)` = df$Pct_Extreme,
+        Severity = df$Status,
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+      )
+
+      datatable(
+        display_df,
+        options = list(pageLength = 10, dom = 'tip'),
+        class = 'compact stripe',
+        rownames = FALSE
+      ) |>
+        formatStyle(
+          'Severity',
+          backgroundColor = styleEqual(
+            c('Mild', 'Extreme'),
+            c(THEME_STATUS_WARNING, THEME_STATUS_DANGER)
+          ),
+          fontWeight = 'bold'
+        )
     })
 
     # Outcome variable check
@@ -604,6 +716,39 @@ data_quality_server <- function(id, rv) {
             )
           )
         ))
+      }
+
+      # Check for extreme outliers (>5% extreme)
+      if (nrow(dq$outliers) > 0) {
+        extreme_vars <- dq$outliers$Variable[dq$outliers$Pct_Extreme > 5]
+        if (length(extreme_vars) > 0) {
+          recommendations <- c(recommendations, list(
+            div(
+              class = "d-flex mb-2",
+              bsicons::bs_icon("exclamation-triangle", class = "text-warning me-2 flex-shrink-0"),
+              span(
+                tags$strong("Extreme outliers detected: "),
+                paste(extreme_vars, collapse = ", "),
+                " \u2014 review for data entry errors or consider impact on tree splits."
+              )
+            )
+          ))
+        }
+
+        mild_vars <- dq$outliers$Variable[dq$outliers$Pct_Mild > 10 & dq$outliers$Pct_Extreme <= 5]
+        if (length(mild_vars) > 0) {
+          recommendations <- c(recommendations, list(
+            div(
+              class = "d-flex mb-2",
+              bsicons::bs_icon("info-circle", class = "text-info me-2 flex-shrink-0"),
+              span(
+                tags$strong("Mild outliers in: "),
+                paste(mild_vars, collapse = ", "),
+                " \u2014 decision trees are generally robust to outliers, but skewed distributions may affect split points."
+              )
+            )
+          ))
+        }
       }
 
       # Sample size
