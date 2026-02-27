@@ -26,3 +26,11 @@ THEME_CHAT_USER_BG       <- "#2563eb"
 THEME_CHAT_AI_BORDER     <- "#e5e5e5"
 THEME_CHAT_AI_LEFT       <- "#93c5fd"
 THEME_CHAT_CONTAINER_BG  <- "#fafafa"
+
+# Tree visualization palettes
+TREE_PALETTE_CLASSIFICATION <- c(
+  "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3",
+  "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"
+)  # Set2 — muted qualitative, 8 colors
+TREE_PALETTE_REGRESSION <- "Blues"
+TREE_NODE_BORDER <- "#d4d4d4"

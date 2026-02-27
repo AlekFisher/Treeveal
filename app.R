@@ -22,6 +22,7 @@ library(haven)
 library(officer)
 library(randomForest)
 library(rvg)
+library(visNetwork)
 
 # ============================================================================
 # PRODUCTION MODE TOGGLE

@@ -31,18 +31,7 @@ create_export_handler <- function(rv) {
 
         tree_temp <- tempfile(fileext = ".png")
         png(tree_temp, width = 10, height = 7, units = "in", res = 150)
-        extra_val <- if (rv$model$method == "class") 104 else 101
-        rpart.plot::rpart.plot(
-          rv$model,
-          type = 4,
-          extra = extra_val,
-          under = TRUE,
-          fallen.leaves = TRUE,
-          roundint = FALSE,
-          box.palette = "BuGn",
-          shadow.col = "gray",
-          main = ""
-        )
+        render_tree_plot(rv$model, title = "")
         dev.off()
 
         pptx <- officer::ph_with(pptx, value = officer::external_img(tree_temp, width = 9, height = 6),
@@ -125,7 +114,7 @@ create_export_handler <- function(rv) {
         pptx <- officer::add_slide(pptx, layout = "Title and Content", master = "Office Theme")
         pptx <- officer::ph_with(pptx, value = "Decision Rules", location = officer::ph_location_type(type = "title"))
 
-        rules <- capture.output(rpart.plot::rpart.rules(rv$model, style = "tall", cover = TRUE))
+        rules <- capture.output(rpart.plot::rpart.rules(rv$model, style = "tall", cover = TRUE, roundint = FALSE))
         rules_text <- paste(head(rules, 30), collapse = "\n")
         if (length(rules) > 30) {
           rules_text <- paste0(rules_text, "\n\n... (", length(rules) - 30, " more lines)")

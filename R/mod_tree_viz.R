@@ -1,5 +1,5 @@
 # mod_tree_viz.R
-# Decision Tree tab: toggle button, dynamic tree+AI layout, tree plot
+# Decision Tree tab: toggle button, dynamic tree+AI layout, static/interactive views
 
 tree_viz_ui <- function(id) {
   ns <- NS(id)
@@ -54,11 +54,24 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
           span("Decision Tree Visualization"),
           conditionalPanel(
             condition = "output.model_built",
-            downloadButton(
-              ns("export_pptx"),
-              "Export",
-              class = "btn-sm btn-outline-primary",
-              icon = icon("file-powerpoint")
+            div(
+              class = "d-flex align-items-center gap-2",
+              div(
+                class = "tree-view-toggle",
+                radioButtons(
+                  ns("view_mode"),
+                  label = NULL,
+                  choices = c("Static" = "static", "Interactive" = "interactive"),
+                  selected = "static",
+                  inline = TRUE
+                )
+              ),
+              downloadButton(
+                ns("export_pptx"),
+                "Export",
+                class = "btn-sm btn-outline-primary",
+                icon = icon("file-powerpoint")
+              )
             )
           )
         ),
@@ -75,30 +88,71 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
           ),
           conditionalPanel(
             condition = "output.model_built",
-            plotOutput(ns("tree_plot"), height = if (rv$show_ai_panel) "550px" else "650px")
+            uiOutput(ns("active_tree_view"))
           )
         )
       )
     }
 
-    # --- Tree Plot ---
+    # --- Active View Switcher ---
+    output$active_tree_view <- renderUI({
+      req(rv$model)
+      view <- input$view_mode %||% "static"
+      plot_height <- if (rv$show_ai_panel) "550px" else "650px"
+
+      if (view == "interactive") {
+        visNetwork::visNetworkOutput(ns("tree_interactive"), height = plot_height)
+      } else {
+        plotOutput(ns("tree_plot"), height = plot_height)
+      }
+    })
+
+    # --- Static Tree Plot ---
     output$tree_plot <- renderPlot({
       req(rv$model)
+      render_tree_plot(rv$model, title = paste("Decision Tree:", rv$outcome_var))
+    }, res = 120)
 
-      extra_val <- if (rv$model$method == "class") 104 else 101
+    # --- Interactive Tree (visNetwork) ---
+    output$tree_interactive <- visNetwork::renderVisNetwork({
+      req(rv$model)
+      vn_data <- rpart_to_visnetwork(rv$model, rv$data_dict)
 
-      rpart.plot(
-        rv$model,
-        type = 4,
-        extra = extra_val,
-        under = TRUE,
-        fallen.leaves = TRUE,
-        roundint = FALSE,
-        box.palette = "BuGn",
-        shadow.col = "gray",
-        main = paste("Decision Tree:", rv$outcome_var)
-      )
-    }, res = 96)
+      visNetwork::visNetwork(
+        vn_data$nodes,
+        vn_data$edges,
+        main = list(text = paste("Decision Tree:", rv$outcome_var),
+                    style = "font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; color: #737373;")
+      ) |>
+        visNetwork::visHierarchicalLayout(
+          direction = "UD",
+          sortMethod = "directed",
+          levelSeparation = 120,
+          nodeSpacing = 150
+        ) |>
+        visNetwork::visNodes(
+          font = list(size = 14, face = "Inter, sans-serif"),
+          borderWidth = 1,
+          shadow = FALSE
+        ) |>
+        visNetwork::visEdges(
+          arrows = "to",
+          color = list(color = "#d4d4d4", highlight = "#2563eb"),
+          font = list(size = 11, color = "#737373", face = "Inter, sans-serif"),
+          smooth = list(type = "cubicBezier")
+        ) |>
+        visNetwork::visInteraction(
+          hover = TRUE,
+          tooltipDelay = 100,
+          zoomView = TRUE,
+          dragView = TRUE,
+          navigationButtons = TRUE
+        ) |>
+        visNetwork::visPhysics(enabled = FALSE) |>
+        visNetwork::visOptions(
+          collapse = list(enabled = TRUE)
+        )
+    })
 
     # --- Export Handler ---
     output$export_pptx <- create_export_handler(rv)
