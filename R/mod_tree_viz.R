@@ -66,11 +66,33 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
                   inline = TRUE
                 )
               ),
-              downloadButton(
-                ns("export_pptx"),
-                "Export",
-                class = "btn-sm btn-outline-primary",
-                icon = icon("file-powerpoint")
+              tags$div(
+                class = "btn-group export-dropdown",
+                tags$button(
+                  class = "btn btn-sm btn-outline-primary dropdown-toggle",
+                  type = "button",
+                  `data-bs-toggle` = "dropdown",
+                  `aria-expanded` = "false",
+                  icon("download"), " Export"
+                ),
+                tags$ul(
+                  class = "dropdown-menu dropdown-menu-end",
+                  tags$li(tags$h6(class = "dropdown-header", "Reports")),
+                  tags$li(downloadButton(ns("export_pptx"), "PowerPoint (.pptx)",
+                                         class = "dropdown-item",
+                                         icon = icon("file-powerpoint"))),
+                  tags$li(downloadButton(ns("export_html"), "HTML Report (.html)",
+                                         class = "dropdown-item",
+                                         icon = icon("file-code"))),
+                  tags$li(tags$hr(class = "dropdown-divider")),
+                  tags$li(tags$h6(class = "dropdown-header", "Images")),
+                  tags$li(downloadButton(ns("export_tree_png"), "Tree Plot (.png)",
+                                         class = "dropdown-item",
+                                         icon = icon("image"))),
+                  tags$li(downloadButton(ns("export_importance_png"), "Importance Chart (.png)",
+                                         class = "dropdown-item",
+                                         icon = icon("chart-bar")))
+                )
               )
             )
           )
@@ -154,7 +176,10 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
         )
     })
 
-    # --- Export Handler ---
-    output$export_pptx <- create_export_handler(rv)
+    # --- Export Handlers ---
+    output$export_pptx <- create_pptx_handler(rv)
+    output$export_html <- create_html_handler(rv)
+    output$export_tree_png <- create_tree_image_handler(rv)
+    output$export_importance_png <- create_importance_image_handler(rv)
   })
 }
