@@ -27,7 +27,7 @@ library(visNetwork)
 # ============================================================================
 # PRODUCTION MODE TOGGLE
 # ============================================================================
-PRODUCTION_MODE <- as.logical(Sys.getenv("PRODUCTION_MODE", "FALSE"))
+PRODUCTION_MODE <- as.logical(Sys.getenv("PRODUCTION_MODE", "TRUE"))
 
 # ============================================================================
 # UI
@@ -128,7 +128,6 @@ ui <- page_sidebar(
 
     nav_panel(
       title = "Data Quality",
-      icon = bsicons::bs_icon("clipboard-check"),
       data_quality_ui("quality")
     ),
 
