@@ -380,7 +380,7 @@ ai_chat_server <- function(id, rv, production_mode) {
           "You are helping a user understand and interpret their decision tree model.\n\n",
           "Here is the context about the current decision tree model:\n\n",
           get_model_context(),
-          if (nzchar(input$study_context)) {
+          if (isTRUE(nzchar(input$study_context))) {
             paste0("\n\nAdditional Study Context from User:\n", input$study_context)
           } else {
             ""
