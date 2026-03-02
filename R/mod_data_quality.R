@@ -242,50 +242,7 @@ data_quality_server <- function(id, rv) {
       }
 
       # --- Outlier Analysis (IQR method, numeric variables only) ---
-      outlier_info <- data.frame(
-        Variable = character(), Q1 = numeric(), Q3 = numeric(), IQR = numeric(),
-        N_Mild = integer(), Pct_Mild = numeric(),
-        N_Extreme = integer(), Pct_Extreme = numeric(),
-        Status = character(), stringsAsFactors = FALSE
-      )
-
-      for (v in numeric_vars) {
-        x <- na.omit(df[[v]])
-        if (length(x) < 4) next
-        q1 <- quantile(x, 0.25)
-        q3 <- quantile(x, 0.75)
-        iqr_val <- q3 - q1
-        if (iqr_val == 0) next
-
-        extreme_low <- q1 - 3 * iqr_val
-        extreme_high <- q3 + 3 * iqr_val
-        mild_low <- q1 - 1.5 * iqr_val
-        mild_high <- q3 + 1.5 * iqr_val
-
-        is_extreme <- x < extreme_low | x > extreme_high
-        is_mild <- (x < mild_low | x > mild_high) & !is_extreme
-
-        n_total <- length(x)
-        n_extreme <- sum(is_extreme)
-        n_mild <- sum(is_mild)
-
-        status <- if (n_extreme / n_total > 0.05) "Extreme"
-                  else if ((n_mild + n_extreme) / n_total > 0.05) "Mild"
-                  else "OK"
-
-        outlier_info <- rbind(outlier_info, data.frame(
-          Variable = v,
-          Q1 = round(q1, 2),
-          Q3 = round(q3, 2),
-          IQR = round(iqr_val, 2),
-          N_Mild = n_mild,
-          Pct_Mild = round(n_mild / n_total * 100, 1),
-          N_Extreme = n_extreme,
-          Pct_Extreme = round(n_extreme / n_total * 100, 1),
-          Status = status,
-          stringsAsFactors = FALSE
-        ))
-      }
+      outlier_info <- detect_outliers(df, numeric_vars)
 
       # --- Variable Summary ---
       var_summary <- merge(missing_info, variance_info, by = "Variable")

@@ -333,23 +333,23 @@ ai_chat_server <- function(id, rv, production_mode) {
         persona_instructions <- switch(input$user_persona,
           "executive" = paste0(
             "\n\nRESPONSE STYLE - EXECUTIVE SUMMARY:\n",
-            "- STRICTLY INTERPRETATION ONLY — do NOT suggest next steps, additional analyses, parameter changes, or methodological improvements\n",
-            "- Be extremely concise — aim for 3-5 bullet points maximum\n",
+            "- STRICTLY INTERPRETATION ONLY -- do NOT suggest next steps, additional analyses, parameter changes, or methodological improvements\n",
+            "- Be extremely concise -- aim for 3-5 bullet points maximum\n",
             "- Lead with the single most important finding\n",
             "- Focus on what the tree found and what it means for the business or program\n",
-            "- Avoid statistical jargon entirely — use plain business language\n",
+            "- Avoid statistical jargon entirely -- use plain business language\n",
             "- Use specific numbers only when they drive a decision (e.g., '81% of high prescribers...')\n",
             "- Format: Brief intro sentence, then bullet points, then one-line bottom-line takeaway\n",
             "- Total response should be readable in under 30 seconds"
           ),
           "project_team" = paste0(
             "\n\nRESPONSE STYLE - PROJECT TEAM:\n",
-            "- STRICTLY INTERPRETATION ONLY — do NOT suggest running more analyses, parameter changes, or methodological improvements\n",
-            "- Structure responses with markdown headers (##) and bullet lists — report-ready formatting\n",
-            "- Explain findings in accessible language — assume smart non-statisticians\n",
+            "- STRICTLY INTERPRETATION ONLY -- do NOT suggest running more analyses, parameter changes, or methodological improvements\n",
+            "- Structure responses with markdown headers (##) and bullet lists -- report-ready formatting\n",
+            "- Explain findings in accessible language -- assume smart non-statisticians\n",
             "- Include key numbers and percentages that tell the story\n",
             "- Connect findings to practical implications and actionable insights\n",
-            "- Keep sections short and scannable — no lengthy paragraphs\n",
+            "- Keep sections short and scannable -- no lengthy paragraphs\n",
             "- The output should be something that could be pasted into a PowerPoint or report\n",
             "- Do NOT end with suggestions for additional analyses or next steps"
           ),
@@ -388,10 +388,10 @@ ai_chat_server <- function(id, rv, production_mode) {
           "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'\n",
           "\nFORMATTING RULES (apply to all responses):\n",
           "- Lead with key takeaways as bullet points\n",
-          "- Use markdown headers (##) and bullet lists — avoid long unbroken paragraphs\n",
+          "- Use markdown headers (##) and bullet lists -- avoid long unbroken paragraphs\n",
           "- **Bold** important findings\n",
-          "- Embed numbers inline in context — do not dump raw statistics\n",
-          "- Keep responses concise — quality over quantity\n",
+          "- Embed numbers inline in context -- do not dump raw statistics\n",
+          "- Keep responses concise -- quality over quantity\n",
           persona_instructions
         )
 

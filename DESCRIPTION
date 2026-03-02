@@ -1,0 +1,7 @@
+Type: project
+Package: dendro
+Title: Dendro Decision Tree Analysis
+Version: 0.1.0
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
