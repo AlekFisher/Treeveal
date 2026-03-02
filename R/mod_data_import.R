@@ -187,7 +187,9 @@ data_import_server <- function(id, rv) {
         meta <- get_demo_datasets()[[input$demo_dataset]]
 
         rv$data <- demo$data
-        rv$data_dict <- demo$dict
+        dict <- demo$dict
+        if (!"notes" %in% names(dict)) dict$notes <- NA_character_
+        rv$data_dict <- dict
         rv$model <- NULL
         rv$chat_history <- list()
         rv$chat <- NULL

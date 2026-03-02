@@ -252,7 +252,7 @@ ai_chat_server <- function(id, rv, production_mode) {
       dict <- rv$data_dict
       dict_lines <- sapply(seq_len(nrow(dict)), function(i) {
         line <- paste0("- ", dict$variable[i], ": ", dict$label[i])
-        if (!is.na(dict$notes[i]) && dict$notes[i] != "") {
+        if (isTRUE(!is.na(dict$notes[i]) && dict$notes[i] != "")) {
           line <- paste0(line, " [Note: ", dict$notes[i], "]")
         }
         line
