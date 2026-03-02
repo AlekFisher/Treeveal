@@ -3,6 +3,7 @@
 
 # --- Sidebar UI: provider, model, persona, study context ---
 ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
+  production_mode <- isTRUE(production_mode)
   ns <- NS(id)
 
   tagList(
@@ -164,6 +165,7 @@ ai_chat_card_ui <- function(id) {
 
 # --- Server ---
 ai_chat_server <- function(id, rv, production_mode) {
+  production_mode <- isTRUE(production_mode)
   moduleServer(id, function(input, output, session) {
 
     # --- Update AI model choices based on provider ---

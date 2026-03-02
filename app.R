@@ -27,7 +27,7 @@ library(visNetwork)
 # ============================================================================
 # PRODUCTION MODE TOGGLE
 # ============================================================================
-PRODUCTION_MODE <- as.logical(Sys.getenv("PRODUCTION_MODE", "FALSE"))
+PRODUCTION_MODE <- isTRUE(as.logical(Sys.getenv("PRODUCTION_MODE", "FALSE")))
 
 # ============================================================================
 # UI
