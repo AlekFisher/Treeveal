@@ -3,6 +3,7 @@
 
 # --- Sidebar UI: provider, model, persona, study context ---
 ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
+  production_mode <- isTRUE(production_mode)
   ns <- NS(id)
 
   tagList(
@@ -164,6 +165,7 @@ ai_chat_card_ui <- function(id) {
 
 # --- Server ---
 ai_chat_server <- function(id, rv, production_mode) {
+  production_mode <- isTRUE(production_mode)
   moduleServer(id, function(input, output, session) {
 
     # --- Update AI model choices based on provider ---
@@ -220,7 +222,7 @@ ai_chat_server <- function(id, rv, production_mode) {
 
     # --- Dev mode: auto-switch to Azure when switching to uploaded data ---
     observeEvent(rv$is_demo_data, {
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         updateSelectInput(session, "ai_provider", selected = "azure")
         rv$chat <- NULL
@@ -233,7 +235,7 @@ ai_chat_server <- function(id, rv, production_mode) {
 
     # --- Dev mode: warning banner when non-Azure + uploaded data ---
     output$provider_warning <- renderUI({
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         div(class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
           bsicons::bs_icon("shield-exclamation"),
@@ -378,7 +380,7 @@ ai_chat_server <- function(id, rv, production_mode) {
           "You are helping a user understand and interpret their decision tree model.\n\n",
           "Here is the context about the current decision tree model:\n\n",
           get_model_context(),
-          if (nzchar(input$study_context)) {
+          if (isTRUE(nzchar(input$study_context))) {
             paste0("\n\nAdditional Study Context from User:\n", input$study_context)
           } else {
             ""
@@ -496,7 +498,7 @@ ai_chat_server <- function(id, rv, production_mode) {
       req(rv$model)
 
       # Dev mode guard: block non-Azure providers with uploaded data
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         rv$chat_history <- c(rv$chat_history, list(
           list(role = "assistant", content = paste0(
