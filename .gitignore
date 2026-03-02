@@ -6,4 +6,5 @@
 .quarto
 .Renviron
 .env
+.claude/
 rsconnect/
