@@ -222,7 +222,7 @@ ai_chat_server <- function(id, rv, production_mode) {
 
     # --- Dev mode: auto-switch to Azure when switching to uploaded data ---
     observeEvent(rv$is_demo_data, {
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         updateSelectInput(session, "ai_provider", selected = "azure")
         rv$chat <- NULL
@@ -235,7 +235,7 @@ ai_chat_server <- function(id, rv, production_mode) {
 
     # --- Dev mode: warning banner when non-Azure + uploaded data ---
     output$provider_warning <- renderUI({
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         div(class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
           bsicons::bs_icon("shield-exclamation"),
@@ -498,7 +498,7 @@ ai_chat_server <- function(id, rv, production_mode) {
       req(rv$model)
 
       # Dev mode guard: block non-Azure providers with uploaded data
-      if (!production_mode && !rv$is_demo_data &&
+      if (!production_mode && !isTRUE(rv$is_demo_data) &&
           !is.null(input$ai_provider) && input$ai_provider != "azure") {
         rv$chat_history <- c(rv$chat_history, list(
           list(role = "assistant", content = paste0(
