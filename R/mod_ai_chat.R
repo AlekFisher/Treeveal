@@ -403,11 +403,11 @@ ai_chat_server <- function(id, rv, production_mode) {
           if (model == "" || is.null(model)) {
             model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
           }
-          api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
           endpoint <- Sys.getenv("AZURE_OPENAI_ENDPOINT")
+          api_key_val <- Sys.getenv("AZURE_OPENAI_API_KEY")
 
           missing_vars <- c()
-          if (api_key == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_API_KEY")
+          if (api_key_val == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_API_KEY")
           if (endpoint == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_ENDPOINT")
           if (model == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_DEPLOYMENT")
 
@@ -423,17 +423,18 @@ ai_chat_server <- function(id, rv, production_mode) {
           rv$chat <- ellmer::chat_azure_openai(
             endpoint = endpoint,
             model = model,
-            api_key = api_key,
+            credentials = function() Sys.getenv("AZURE_OPENAI_API_KEY"),
             api_version = "2025-04-01-preview",
             system_prompt = system_prompt,
-            echo = FALSE
+            echo = "none"
           )
 
         } else if (input$ai_provider == "ollama") {
           rv$chat <- tryCatch({
             ellmer::chat_ollama(
               model = input$ai_model,
-              system_prompt = system_prompt
+              system_prompt = system_prompt,
+              echo = "none"
             )
           }, error = function(e) {
             stop(paste0(
@@ -446,8 +447,7 @@ ai_chat_server <- function(id, rv, production_mode) {
           })
 
         } else if (input$ai_provider == "anthropic") {
-          api_key <- Sys.getenv("ANTHROPIC_API_KEY")
-          if (api_key == "") {
+          if (Sys.getenv("ANTHROPIC_API_KEY") == "") {
             stop(paste0(
               "Anthropic API key not found.\n\n",
               "Please set the ANTHROPIC_API_KEY environment variable.\n\n",
@@ -456,12 +456,12 @@ ai_chat_server <- function(id, rv, production_mode) {
           }
           rv$chat <- ellmer::chat_anthropic(
             model = input$ai_model,
-            system_prompt = system_prompt
+            system_prompt = system_prompt,
+            echo = "none"
           )
 
         } else if (input$ai_provider == "gemini") {
-          api_key <- Sys.getenv("GOOGLE_API_KEY")
-          if (api_key == "") {
+          if (Sys.getenv("GOOGLE_API_KEY") == "") {
             stop(paste0(
               "Google Gemini API key not found.\n\n",
               "Please set the GOOGLE_API_KEY environment variable.\n\n",
@@ -471,12 +471,11 @@ ai_chat_server <- function(id, rv, production_mode) {
           rv$chat <- ellmer::chat_google_gemini(
             model = input$ai_model,
             system_prompt = system_prompt,
-            credentials = NULL
+            echo = "none"
           )
 
         } else if (input$ai_provider == "openai") {
-          api_key <- Sys.getenv("OPENAI_API_KEY")
-          if (api_key == "") {
+          if (Sys.getenv("OPENAI_API_KEY") == "") {
             stop(paste0(
               "OpenAI API key not found.\n\n",
               "Please set the OPENAI_API_KEY environment variable.\n\n",
@@ -485,7 +484,8 @@ ai_chat_server <- function(id, rv, production_mode) {
           }
           rv$chat <- ellmer::chat_openai(
             model = input$ai_model,
-            system_prompt = system_prompt
+            system_prompt = system_prompt,
+            echo = "none"
           )
         }
       }

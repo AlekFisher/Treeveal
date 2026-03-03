@@ -1,5 +1,5 @@
-# ellmer API Reference (version: 0.4.0)
-# Last updated: 2026-02-25
+# ellmer API Reference (version: 0.4.0, dev: 0.4.0.9000)
+# Last updated: 2026-03-03
 # Source: https://github.com/tidyverse/ellmer
 
 ## Creating a Chat Object
@@ -293,6 +293,61 @@ create_tool_def("my_function")        # String form
 
 Not for production code — use interactively to bootstrap tool definitions.
 
+## Built-in Web Search & Fetch Tools (v0.4.0+)
+
+```r
+# Claude
+chat <- chat_claude()
+chat$register_tool(claude_tool_web_search())
+chat$register_tool(claude_tool_web_fetch())
+
+# Google Gemini
+chat <- chat_google_gemini()
+chat$register_tool(google_tool_web_search())
+chat$register_tool(google_tool_web_fetch())
+
+# OpenAI
+chat <- chat_openai()
+chat$register_tool(openai_tool_web_search())
+```
+
+## File Upload (Claude only, v0.4.0+)
+
+```r
+# claude_file_*() functions for managing file uploads with Claude
+```
+
+## Schema Helper (v0.4.0+)
+
+```r
+schema_df(my_dataframe)   # Describes a data frame's schema to an LLM
+```
+
+## Tool Return Types (v0.4.0+)
+
+Tools can now return image/PDF content (not just strings):
+
+```r
+# Return an image from a tool
+content_image_file("path/to/chart.png")
+content_image_pdf("path/to/report.pdf")
+```
+
+## Parallel & Batch Chat (stable in v0.4.0)
+
+```r
+# Run multiple chats in parallel
+results <- parallel_chat(list(chat1, chat2, chat3))
+# on_error: "stop" (default, stops on first error) or "continue"
+
+parallel_chat_text(list(chat1, chat2))      # Returns text results
+parallel_chat_structured(list(chat1, chat2)) # Returns tibble
+
+# Batch processing (for large workloads)
+batch_chat(list(chat1, chat2, chat3))
+batch_chat_text(list(chat1, chat2, chat3))
+```
+
 ## Known Gotchas for v0.4.0
 
 - **Tool argument descriptions matter.** The more detail in `type_*()` descriptions, the better the LLM selects arguments. Vague descriptions lead to wrong tool calls.
@@ -302,3 +357,60 @@ Not for production code — use interactively to bootstrap tool definitions.
 - **`$chat_async()` with `tool_mode = "sequential"`** is recommended for Shiny apps where tools may need user interaction.
 - **System prompt changes** don't clear history. Create a new Chat object to fully reset.
 - **`type_object()` uses `.description` (dot prefix)** unlike other type functions which use `description`.
+
+## Breaking Changes in v0.4.0 (from v0.3.x)
+
+These deprecated items were **permanently removed** in v0.4.0:
+
+| Removed | Replacement |
+|---|---|
+| `Chat$extract_data()` | `Chat$chat_structured()` |
+| `Chat$extract_data_async()` | `Chat$chat_structured_async()` |
+| `chat_anthropic(max_tokens = ...)` | `chat_anthropic(params = params(...))` |
+| `chat_azure()` | `chat_azure_openai()` |
+| `chat_bedrock()` | `chat_aws_bedrock()` |
+| `chat_cortex()` | `chat_snowflake()` |
+| `chat_gemini()` | `chat_google_gemini()` |
+| `chat_openai(seed = ...)` | `chat_openai(params = params(...))` |
+| `create_tool_def(model = ...)` | `create_tool_def(chat = ...)` |
+| `chat_azure_openai(token = ...)` | (removed) |
+
+### `api_key` → `credentials`
+
+All `chat_*()` functions now prefer a `credentials` function over `api_key`. API keys are never stored in the chat object — they are retrieved on demand. `api_key` still works but is deprecated.
+
+### `chat_openai()` changes
+
+- Now uses OpenAI's **Responses** endpoint (not Chat Completions).
+- `chat_openai(base_url = ...)` for non-OpenAI providers **no longer works**. Use `chat_openai_compatible(base_url = ...)` instead. `chat_openai()` is exclusively for the official OpenAI API.
+
+### Default model changes
+
+- `chat_claude()` / `chat_aws_bedrock()` default to **Claude Sonnet 4.5**.
+- `chat_groq()` defaults to **llama-3.1-8b-instant**.
+
+### Other v0.4.0 changes
+
+- `chat_claude()` reinstated as alias (no longer deprecated).
+- `AssistantTurn` objects now have a `@duration` slot.
+- `Chat$get_tokens()` returns cost per assistant turn with content descriptions.
+- `parallel_chat()` returns mix of `Chat`, error, and `NULL` objects.
+
+## Dev Version Notes (0.4.0.9000 — GitHub only)
+
+These fixes are available via `pak::pak("tidyverse/ellmer")`:
+
+- `chat_databricks()` and `chat_openai_compatible()` providers no longer fail with HTTP 400 when conversation history contains empty `ContentText("")` during tool calling.
+- `chat_groq()` supports structured chat.
+- Streaming distinguishes text content from thinking content (enables specialized UI in shinychat).
+- `chat_github()` uses `chat_openai_compatible()` for improved compatibility.
+- `chat_ollama()` `params` supports `top_k`.
+
+## Version History Summary
+
+| Version | Date | Key Changes |
+|---|---|---|
+| 0.4.0 | 2025-11-15 | Removed all 0.2.0 deprecations, `credentials` replaces `api_key`, built-in web tools, `chat_openai()` uses Responses endpoint, `chat_openai_compatible()` for non-OpenAI, `parallel_chat()` stable |
+| 0.3.2 | 2025-09-03 | `chat()` universal function improved, more providers support `params`, `deployment_id` deprecated for `model` in Azure |
+| 0.3.1 | 2025-08-24 | Bug fixes, `chat_github()` new endpoint, env var support for base URLs |
+| 0.3.0 | 2025-07-24 | Universal `chat()` function, `tool()` redesign with `arguments` list, automatic retry (3x), `type_array()`/`type_enum()` param reorder |
