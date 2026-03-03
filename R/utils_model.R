@@ -31,7 +31,9 @@ render_tree_plot <- function(model, title = "") {
   is_classification <- model$method == "class"
   extra_val <- if (is_classification) 104 else 101
 
-  if (is_classification && n_classes > 0) {
+  if (is_classification && n_classes > 2) {
+    palette <- "auto"
+  } else if (is_classification && n_classes > 0) {
     palette <- TREE_PALETTE_CLASSIFICATION[seq_len(min(n_classes, length(TREE_PALETTE_CLASSIFICATION)))]
   } else {
     palette <- TREE_PALETTE_REGRESSION
