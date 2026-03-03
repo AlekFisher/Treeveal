@@ -471,7 +471,7 @@ ai_chat_server <- function(id, rv, production_mode) {
           rv$chat <- ellmer::chat_google_gemini(
             model = input$ai_model,
             system_prompt = system_prompt,
-            api_key = api_key
+            credentials = NULL
           )
 
         } else if (input$ai_provider == "openai") {
