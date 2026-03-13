@@ -24,6 +24,7 @@ library(officer)
 library(randomForest)
 library(rvg)
 library(visNetwork)
+library(cicerone)
 
 # ============================================================================
 # PRODUCTION MODE TOGGLE
@@ -36,6 +37,7 @@ PRODUCTION_MODE <- as.logical(Sys.getenv("PRODUCTION_MODE", "TRUE"))
 
 ui <- page_sidebar(
   title = tags$span(
+    id = "app_title_area",
     "Dendro",
     if (PRODUCTION_MODE) {
       tagList(
@@ -60,7 +62,8 @@ ui <- page_sidebar(
         style = "font-size: 0.6em; vertical-align: middle;",
         "DEV"
       )
-    }
+    },
+    actionButton("start_tour", "Guided Tour", class = "btn-outline-light btn-sm ms-3", style = "vertical-align: middle;", icon = icon("route"))
   ),
   theme = bs_theme(
     version = 5,
@@ -81,44 +84,39 @@ ui <- page_sidebar(
     "input-border-color" = "#e5e5e5",
     "card-border-color" = "#f0f0f0"
   ),
-
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "theme.css"),
     tags$style(HTML("
       #shiny-disconnected-overlay, #ss-connect-dialog { display: none !important; }
     "))
   ),
+  use_cicerone(),
 
   # Sidebar
   sidebar = sidebar(
     width = 350,
     title = "Configuration",
-
     accordion(
       id = "sidebar_accordion",
       open = c("data_panel", "model_panel"),
-
       accordion_panel(
         title = "Data Upload",
         value = "data_panel",
         icon = bsicons::bs_icon("cloud-upload"),
         data_import_ui("data")
       ),
-
       accordion_panel(
         title = "Factor Levels",
         value = "factor_panel",
         icon = bsicons::bs_icon("list-ol"),
         factor_editor_ui("factors")
       ),
-
       accordion_panel(
         title = "Model Parameters",
         value = "model_panel",
         icon = bsicons::bs_icon("sliders"),
         tree_config_ui("config")
       ),
-
       accordion_panel(
         title = "AI Configuration",
         value = "ai_panel",
@@ -131,42 +129,35 @@ ui <- page_sidebar(
   # Main content
   navset_card_tab(
     id = "main_tabs",
-
     nav_panel(
       title = "Data Preview",
       icon = bsicons::bs_icon("table"),
       data_import_tab_ui("data")
     ),
-
     nav_panel(
       title = "Data Quality",
       data_quality_ui("quality")
     ),
-
     nav_panel(
       title = "Decision Tree",
       icon = bsicons::bs_icon("diagram-3"),
       tree_viz_ui("tree")
     ),
-
     nav_panel(
       title = "Model Details",
       icon = bsicons::bs_icon("file-earmark-code"),
       model_details_ui("details")
     ),
-
     nav_panel(
       title = "Bivariate Analysis",
       icon = bsicons::bs_icon("bar-chart-steps"),
       bivariate_ui("bivariate")
     ),
-
     nav_panel(
       title = "Methodology Audit",
       icon = bsicons::bs_icon("clipboard-data"),
       methodology_ui("methodology")
     ),
-
     nav_panel(
       title = "Guide",
       icon = bsicons::bs_icon("book"),
@@ -180,7 +171,6 @@ ui <- page_sidebar(
 # ============================================================================
 
 server <- function(input, output, session) {
-
   # Shared reactive state
   rv <- reactiveValues(
     data = NULL,
@@ -200,11 +190,54 @@ server <- function(input, output, session) {
   )
 
   # Global conditional panel outputs (used by conditionalPanel across all modules)
-  output$data_loaded <- reactive({ !is.null(rv$data) })
+  output$data_loaded <- reactive({
+    !is.null(rv$data)
+  })
   outputOptions(output, "data_loaded", suspendWhenHidden = FALSE)
 
-  output$model_built <- reactive({ !is.null(rv$model) })
+  output$model_built <- reactive({
+    !is.null(rv$model)
+  })
   outputOptions(output, "model_built", suspendWhenHidden = FALSE)
+
+  # Cicerone guided tour
+  guide <- Cicerone$
+    new()$
+    step(
+    el = "app_title_area",
+    title = "Welcome to Dendro",
+    description = "Dendro makes decision tree analysis accessible and easy to interpret."
+  )$
+    step(
+    el = "[data-value='data_panel']",
+    is_id = FALSE,
+    title = "Data Upload & Quality Gatekeeper",
+    description = "We ensure your data is robust before modeling. Upload your data here to get started."
+  )$
+    step(
+    el = "[data-value='model_panel']",
+    is_id = FALSE,
+    title = "Model Parameters",
+    description = "Take full control over the decision tree algorithm with transparent settings."
+  )$
+    step(
+    el = "a[data-value='Decision Tree']",
+    is_id = FALSE,
+    title = "Decision Tree Visualization",
+    description = "Explore the deterministic outcomes of your model visually."
+  )$
+    step(
+    el = "[data-value='ai_panel']",
+    is_id = FALSE,
+    title = "AI Configuration (Zero Retention)",
+    description = "Get secure, context-aware AI interpretations of your model here. Your row-level data is never sent to the AI."
+  )
+
+  guide$init()
+
+  observeEvent(input$start_tour, {
+    guide$start()
+  })
 
   # Compliance popup
   observeEvent(input$show_compliance, {

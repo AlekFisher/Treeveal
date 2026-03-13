@@ -44,14 +44,12 @@ ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
         )
       )
     },
-
     selectInput(
       ns("ai_model"),
       "Model",
       choices = NULL,
       selected = NULL
     ),
-
     selectInput(
       ns("user_persona"),
       "Response Style",
@@ -69,7 +67,6 @@ ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
       tags$strong("Project Team:"), " Clear narrative for reports", tags$br(),
       tags$strong("Statistician:"), " Technical detail & diagnostics"
     ),
-
     accordion(
       id = ns("pharma_context_accordion"),
       open = FALSE,
@@ -103,7 +100,6 @@ ai_chat_card_ui <- function(id) {
     card_body(
       class = "d-flex flex-column",
       style = "height: 600px; padding: 1rem;",
-
       conditionalPanel(
         condition = "!output.model_built",
         div(
@@ -113,7 +109,6 @@ ai_chat_card_ui <- function(id) {
           p(class = "text-muted", "The AI needs a decision tree to interpret")
         )
       ),
-
       conditionalPanel(
         condition = "output.model_built",
         class = "d-flex flex-column flex-grow-1",
@@ -136,6 +131,7 @@ ai_chat_card_ui <- function(id) {
           actionButton(ns("ask_interpret"), "Interpret", class = "btn-outline-primary btn-sm me-1", icon = icon("lightbulb")),
           actionButton(ns("ask_insights"), "Insights", class = "btn-outline-primary btn-sm me-1", icon = icon("chart-line")),
           actionButton(ns("ask_recommendations"), "Recommend", class = "btn-outline-primary btn-sm me-1", icon = icon("list-check")),
+          actionButton(ns("ask_data_story"), "Data Story", class = "btn-primary btn-sm me-1", icon = icon("book-open")),
           actionButton(ns("ask_limitations"), "Limits", class = "btn-outline-primary btn-sm", icon = icon("exclamation-triangle"))
         ),
 
@@ -173,7 +169,6 @@ ai_chat_card_ui <- function(id) {
 ai_chat_server <- function(id, rv, production_mode) {
   production_mode <- isTRUE(production_mode)
   moduleServer(id, function(input, output, session) {
-
     # --- Update AI model choices based on provider ---
     observeEvent(input$ai_provider, {
       rv$chat <- NULL
@@ -229,7 +224,7 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Dev mode: auto-switch to Azure when switching to uploaded data ---
     observeEvent(rv$is_demo_data, {
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-          !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        !is.null(input$ai_provider) && input$ai_provider != "azure") {
         updateSelectInput(session, "ai_provider", selected = "azure")
         rv$chat <- NULL
         showNotification(
@@ -242,8 +237,9 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Dev mode: warning banner when non-Azure + uploaded data ---
     output$provider_warning <- renderUI({
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-          !is.null(input$ai_provider) && input$ai_provider != "azure") {
-        div(class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
+        !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        div(
+          class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
           bsicons::bs_icon("shield-exclamation"),
           " Non-Azure providers are only available with demo datasets. ",
           "Please switch to Azure OpenAI for uploaded data."
@@ -253,7 +249,9 @@ ai_chat_server <- function(id, rv, production_mode) {
 
     # --- Dictionary Context ---
     get_dictionary_context <- reactive({
-      if (is.null(rv$data_dict)) return(NULL)
+      if (is.null(rv$data_dict)) {
+        return(NULL)
+      }
 
       dict <- rv$data_dict
       dict_lines <- sapply(seq_len(nrow(dict)), function(i) {
@@ -337,7 +335,6 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Initialize or get chat object ---
     get_chat <- function() {
       if (is.null(rv$chat)) {
-
         persona_instructions <- switch(input$user_persona,
           "executive" = paste0(
             "\n\nRESPONSE STYLE - EXECUTIVE SUMMARY:\n",
@@ -385,7 +382,7 @@ ai_chat_server <- function(id, rv, production_mode) {
         has_pop <- isTRUE(nzchar(input$target_population))
         has_tx <- isTRUE(nzchar(input$primary_treatment))
         has_obj <- isTRUE(nzchar(input$research_objective))
-        
+
         if (has_pop || has_tx || has_obj) {
           pharma_context <- "\n\nCRITICAL PHARMA STUDY CONTEXT:\n"
           if (has_pop) pharma_context <- paste0(pharma_context, "- Target Patient Population: ", input$target_population, "\n")
@@ -443,24 +440,25 @@ ai_chat_server <- function(id, rv, production_mode) {
             system_prompt = system_prompt,
             echo = "none"
           )
-
         } else if (input$ai_provider == "ollama") {
-          rv$chat <- tryCatch({
-            ellmer::chat_ollama(
-              model = input$ai_model,
-              system_prompt = system_prompt,
-              echo = "none"
-            )
-          }, error = function(e) {
-            stop(paste0(
-              "Could not connect to Ollama. Please ensure:\n\n",
-              "\u2022 Ollama is installed and running locally\n",
-              "\u2022 The model '", input$ai_model, "' is downloaded\n",
-              "\u2022 Ollama is accessible at http://localhost:11434\n\n",
-              "Error details: ", e$message
-            ))
-          })
-
+          rv$chat <- tryCatch(
+            {
+              ellmer::chat_ollama(
+                model = input$ai_model,
+                system_prompt = system_prompt,
+                echo = "none"
+              )
+            },
+            error = function(e) {
+              stop(paste0(
+                "Could not connect to Ollama. Please ensure:\n\n",
+                "\u2022 Ollama is installed and running locally\n",
+                "\u2022 The model '", input$ai_model, "' is downloaded\n",
+                "\u2022 Ollama is accessible at http://localhost:11434\n\n",
+                "Error details: ", e$message
+              ))
+            }
+          )
         } else if (input$ai_provider == "anthropic") {
           if (Sys.getenv("ANTHROPIC_API_KEY") == "") {
             stop(paste0(
@@ -474,7 +472,6 @@ ai_chat_server <- function(id, rv, production_mode) {
             system_prompt = system_prompt,
             echo = "none"
           )
-
         } else if (input$ai_provider == "gemini") {
           if (Sys.getenv("GOOGLE_API_KEY") == "") {
             stop(paste0(
@@ -488,7 +485,6 @@ ai_chat_server <- function(id, rv, production_mode) {
             system_prompt = system_prompt,
             echo = "none"
           )
-
         } else if (input$ai_provider == "openai") {
           if (Sys.getenv("OPENAI_API_KEY") == "") {
             stop(paste0(
@@ -514,7 +510,7 @@ ai_chat_server <- function(id, rv, production_mode) {
 
       # Dev mode guard: block non-Azure providers with uploaded data
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-          !is.null(input$ai_provider) && input$ai_provider != "azure") {
+        !is.null(input$ai_provider) && input$ai_provider != "azure") {
         rv$chat_history <- c(rv$chat_history, list(
           list(role = "assistant", content = paste0(
             "\u26a0\ufe0f **Data Security Notice**\n\n",
@@ -530,55 +526,62 @@ ai_chat_server <- function(id, rv, production_mode) {
         list(role = "user", content = message)
       ))
 
-      chat <- tryCatch({
-        get_chat()
-      }, error = function(e) {
-        rv$chat_history <- c(rv$chat_history, list(
-          list(role = "assistant", content = paste0(
-            "\u26a0\ufe0f **AI Configuration Error**\n\n",
-            e$message,
-            "\n\nPlease check your settings and try again."
+      chat <- tryCatch(
+        {
+          get_chat()
+        },
+        error = function(e) {
+          rv$chat_history <- c(rv$chat_history, list(
+            list(role = "assistant", content = paste0(
+              "\u26a0\ufe0f **AI Configuration Error**\n\n",
+              e$message,
+              "\n\nPlease check your settings and try again."
+            ))
           ))
-        ))
-        return(NULL)
-      })
-
-      if (is.null(chat)) return(invisible(NULL))
-
-      tryCatch({
-        response <- chat$chat(message)
-
-        rv$chat_history <- c(rv$chat_history, list(
-          list(role = "assistant", content = response)
-        ))
-
-      }, error = function(e) {
-        error_text <- e$message
-
-        user_message <- if (grepl("401|unauthorized|invalid.*key", error_text, ignore.case = TRUE)) {
-          "**Authentication Failed**\n\nYour API key appears to be invalid or expired. Please check your API key configuration."
-        } else if (grepl("429|rate.?limit|too many requests", error_text, ignore.case = TRUE)) {
-          "**Rate Limit Exceeded**\n\nToo many requests. Please wait a moment and try again."
-        } else if (grepl("timeout|timed out|connection", error_text, ignore.case = TRUE)) {
-          "**Connection Error**\n\nCould not connect to the AI service. Please check your internet connection and try again."
-        } else if (grepl("500|502|503|504|server error", error_text, ignore.case = TRUE)) {
-          "**Service Unavailable**\n\nThe AI service is temporarily unavailable. Please try again in a few minutes."
-        } else if (grepl("model.*not found|does not exist", error_text, ignore.case = TRUE)) {
-          paste0("**Model Not Found**\n\nThe selected model '", input$ai_model, "' is not available. Please select a different model.")
-        } else {
-          paste0("**Error**\n\n", error_text)
+          return(NULL)
         }
+      )
 
-        rv$chat_history <- c(rv$chat_history, list(
-          list(role = "assistant", content = paste0("\u26a0\ufe0f ", user_message))
-        ))
+      if (is.null(chat)) {
+        return(invisible(NULL))
+      }
 
-        showNotification(
-          "AI request failed. See chat for details.",
-          type = "error",
-          duration = 5
-        )
-      })
+      tryCatch(
+        {
+          response <- chat$chat(message)
+
+          rv$chat_history <- c(rv$chat_history, list(
+            list(role = "assistant", content = response)
+          ))
+        },
+        error = function(e) {
+          error_text <- e$message
+
+          user_message <- if (grepl("401|unauthorized|invalid.*key", error_text, ignore.case = TRUE)) {
+            "**Authentication Failed**\n\nYour API key appears to be invalid or expired. Please check your API key configuration."
+          } else if (grepl("429|rate.?limit|too many requests", error_text, ignore.case = TRUE)) {
+            "**Rate Limit Exceeded**\n\nToo many requests. Please wait a moment and try again."
+          } else if (grepl("timeout|timed out|connection", error_text, ignore.case = TRUE)) {
+            "**Connection Error**\n\nCould not connect to the AI service. Please check your internet connection and try again."
+          } else if (grepl("500|502|503|504|server error", error_text, ignore.case = TRUE)) {
+            "**Service Unavailable**\n\nThe AI service is temporarily unavailable. Please try again in a few minutes."
+          } else if (grepl("model.*not found|does not exist", error_text, ignore.case = TRUE)) {
+            paste0("**Model Not Found**\n\nThe selected model '", input$ai_model, "' is not available. Please select a different model.")
+          } else {
+            paste0("**Error**\n\n", error_text)
+          }
+
+          rv$chat_history <- c(rv$chat_history, list(
+            list(role = "assistant", content = paste0("\u26a0\ufe0f ", user_message))
+          ))
+
+          showNotification(
+            "AI request failed. See chat for details.",
+            type = "error",
+            duration = 5
+          )
+        }
+      )
     }
 
     # --- Chat Event Handlers ---
@@ -600,6 +603,12 @@ ai_chat_server <- function(id, rv, production_mode) {
     observeEvent(input$ask_insights, {
       withProgress(message = "Extracting insights...", {
         send_to_ai("What are the 3-5 most important insights from this decision tree? Focus on actionable findings that would be valuable for decision-making.")
+      })
+    })
+
+    observeEvent(input$ask_data_story, {
+      withProgress(message = "Generating Data Story...", {
+        send_to_ai("Please generate a comprehensive 'Data Story' Executive Summary.\n\nFocus on:\n1. The top 3 drivers (variables) overall.\n2. The specific profiles and rules of the 3 most distinct sub-segments (terminal nodes) found in the tree.\n\nWrite this as a cohesive narrative report using markdown formatting, focusing on the underlying drivers of behavior rather than just predictive scoring.")
       })
     })
 
