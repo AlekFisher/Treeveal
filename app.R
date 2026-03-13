@@ -216,7 +216,7 @@ server <- function(input, output, session) {
         tags$li(tags$strong("Zero Data Retention: "), "When using AI interpretation features, only anonymized model metadata (decision rules, variable names, and statistical metrics) is sent to secure enterprise endpoints."),
         tags$li(tags$strong("No Public Model Training: "), "Your data and tree parameters are never used to train public foundation models.")
       ),
-      p(class = "text-muted small mt-3", "Enterprise Compliance Mode Active: Azure OpenAI / Local deployment enforced."),
+      p(class = "text-muted small mt-3", "Enterprise Compliance Mode Active: Azure-backed deployments enforced."),
       easyClose = TRUE,
       footer = modalButton("Close"),
       size = "l"

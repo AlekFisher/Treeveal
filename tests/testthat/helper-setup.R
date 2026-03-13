@@ -10,6 +10,7 @@ library(ggplot2)
 r_dir <- file.path(testthat::test_path(), "..", "..", "R")
 
 source(file.path(r_dir, "utils_theme.R"))
+source(file.path(r_dir, "utils_ai_providers.R"))
 source(file.path(r_dir, "utils_data.R"))
 source(file.path(r_dir, "utils_demo_data.R"))
 source(file.path(r_dir, "utils_model.R"))

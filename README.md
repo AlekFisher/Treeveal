@@ -26,7 +26,8 @@ Treeveal integrates with leading AI providers through the `{ellmer}` package:
 
 | Provider | Model | Best For |
 |----------|-------|----------|
-| **Azure OpenAI** | GPT-4 | Enterprise/Production (secure) |
+| **Azure OpenAI (Primary)** | Your Azure deployment | Enterprise/Production (secure) |
+| **Azure OpenAI (Enterprise Claude)** | Your Azure Claude deployment | Enterprise/Production (secure) |
 | **Anthropic** | Claude | Nuanced analysis |
 | **Google** | Gemini | General interpretation |
 | **OpenAI** | GPT | Versatile insights |
@@ -53,7 +54,7 @@ One-click insights without crafting prompts:
 
 ### Production Mode
 
-A dedicated secure mode that restricts AI providers to Azure OpenAI only — designed for working with sensitive client data while maintaining enterprise compliance.
+A dedicated secure mode that restricts AI providers to Azure-backed endpoints only, including the secondary enterprise Claude deployment when configured.
 
 ---
 
@@ -116,6 +117,12 @@ ANTHROPIC_API_KEY=your_key_here
 GOOGLE_API_KEY=your_key_here
 OPENAI_API_KEY=your_key_here
 AZURE_OPENAI_API_KEY=your_key_here
+AZURE_OPENAI_ENDPOINT=https://your-primary-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=your_primary_deployment
+AZURE_OPENAI_API_KEY_NEW=your_key_here
+AZURE_OPENAI_ENDPOINT_NEW=https://your-secondary-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT_NEW=your_enterprise_claude_deployment
+PRODUCTION_MODE=FALSE
 ```
 
 ### Run the App
@@ -163,3 +170,4 @@ MIT
 <p align="center">
   <em>Transform complex decision trees into clear, actionable insights.</em>
 </p>
+
