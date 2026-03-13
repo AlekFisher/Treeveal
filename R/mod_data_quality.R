@@ -295,6 +295,17 @@ data_quality_server <- function(id, rv) {
       )
     })
 
+    # Track overall data health for gatekeeping
+    observe({
+      req(data_quality())
+      dq <- data_quality()
+      
+      # Determine if there is a critical block
+      # Critical = any "Issue" status OR very few observations
+      is_critical <- (dq$n_issue > 0) || (dq$n_obs < 30)
+      rv$data_health_critical <- is_critical
+    })
+
     # Summary value boxes
     output$dq_ready_vars <- renderText({
       req(data_quality())

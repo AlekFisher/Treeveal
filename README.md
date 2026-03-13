@@ -103,7 +103,7 @@ Supports the formats you actually use:
 install.packages(c(
   "shiny", "bslib", "rpart", "rpart.plot",
   "ellmer", "DT", "dplyr", "tidyr", "ggplot2",
-  "readxl", "haven", "officer", "rvg", "randomForest"
+  "readxl", "haven", "officer", "rvg", "randomForest", "gt"
 ))
 ```
 

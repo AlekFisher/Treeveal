@@ -36,22 +36,42 @@ tree_config_ui <- function(id) {
 
     hr(),
 
-    actionButton(
-      ns("run_model"),
-      "Build Decision Tree",
-      class = "btn-primary btn-lg w-100",
-      icon = icon("play")
-    )
+    uiOutput(ns("build_btn_container"))
   )
 }
 
 tree_config_server <- function(id, rv, parent_session) {
   moduleServer(id, function(input, output, session) {
 
+    ns <- session$ns
+
     # Sync parameters to rv for cross-module access
     observe({ rv$cp <- input$cp })
     observe({ rv$minbucket <- input$minbucket })
     observe({ rv$maxdepth <- input$maxdepth })
+
+    output$build_btn_container <- renderUI({
+      is_critical <- isTRUE(rv$data_health_critical)
+      
+      if (is_critical) {
+        div(
+          actionButton(
+            ns("run_model_disabled"),
+            "Build Decision Tree",
+            class = "btn-secondary btn-lg w-100 disabled",
+            icon = icon("ban")
+          ),
+          p(class = "text-danger small mt-2 text-center", bsicons::bs_icon("exclamation-triangle"), " Address critical Data Quality issues first")
+        )
+      } else {
+        actionButton(
+          ns("run_model"),
+          "Build Decision Tree",
+          class = "btn-primary btn-lg w-100",
+          icon = icon("play")
+        )
+      }
+    })
 
     # Model building
     observeEvent(input$run_model, {

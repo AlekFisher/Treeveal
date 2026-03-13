@@ -70,11 +70,17 @@ ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
       tags$strong("Statistician:"), " Technical detail & diagnostics"
     ),
 
-    textAreaInput(
-      ns("study_context"),
-      "Study Context (Optional)",
-      placeholder = "Provide any relevant context about your data, research questions, or domain knowledge that would help the AI interpret results...",
-      rows = 4
+    accordion(
+      id = ns("pharma_context_accordion"),
+      open = FALSE,
+      accordion_panel(
+        title = "Pharma Study Context",
+        icon = bsicons::bs_icon("hospital"),
+        p(class = "small text-muted mb-2", "Guide the AI to use precise clinical and commercial terminology."),
+        textInput(ns("target_population"), "Target Patient Population", placeholder = "e.g. Adults with Type 2 Diabetes"),
+        textInput(ns("primary_treatment"), "Primary Treatment / Brand", placeholder = "e.g. GLP-1 Agonists"),
+        textAreaInput(ns("research_objective"), "Key Research Objective", placeholder = "e.g. Understand drivers of early discontinuation", rows = 2)
+      )
     )
   )
 }
@@ -375,16 +381,25 @@ ai_chat_server <- function(id, rv, production_mode) {
           )
         )
 
+        pharma_context <- ""
+        has_pop <- isTRUE(nzchar(input$target_population))
+        has_tx <- isTRUE(nzchar(input$primary_treatment))
+        has_obj <- isTRUE(nzchar(input$research_objective))
+        
+        if (has_pop || has_tx || has_obj) {
+          pharma_context <- "\n\nCRITICAL PHARMA STUDY CONTEXT:\n"
+          if (has_pop) pharma_context <- paste0(pharma_context, "- Target Patient Population: ", input$target_population, "\n")
+          if (has_tx) pharma_context <- paste0(pharma_context, "- Primary Treatment / Brand: ", input$primary_treatment, "\n")
+          if (has_obj) pharma_context <- paste0(pharma_context, "- Key Research Objective: ", input$research_objective, "\n")
+          pharma_context <- paste0(pharma_context, "INSTRUCTION: The AI MUST natively incorporate this specific clinical terminology into all interpretations.\n")
+        }
+
         system_prompt <- paste0(
           "You are an expert statistical analyst and data scientist specializing in decision tree analysis. ",
           "You are helping a user understand and interpret their decision tree model.\n\n",
           "Here is the context about the current decision tree model:\n\n",
           get_model_context(),
-          if (isTRUE(nzchar(input$study_context))) {
-            paste0("\n\nAdditional Study Context from User:\n", input$study_context)
-          } else {
-            ""
-          },
+          pharma_context,
           "\n\nIMPORTANT INSTRUCTIONS:\n",
           "- When discussing variables, ALWAYS use their descriptive labels (from the data dictionary) rather than raw variable names\n",
           "- For example, say 'belief that early effective treatment leads to best outcomes' instead of 'a0_7'\n",

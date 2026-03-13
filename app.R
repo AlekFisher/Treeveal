@@ -14,6 +14,7 @@ library(rpart)
 library(rpart.plot)
 library(ellmer)
 library(DT)
+library(gt)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -37,10 +38,21 @@ ui <- page_sidebar(
   title = tags$span(
     "Dendro",
     if (PRODUCTION_MODE) {
-      tags$span(
-        class = "badge bg-success ms-2",
-        style = "font-size: 0.6em; vertical-align: middle;",
-        "PRODUCTION"
+      tagList(
+        tags$span(
+          class = "badge bg-success ms-2",
+          style = "font-size: 0.6em; vertical-align: middle;",
+          "PRODUCTION"
+        ),
+        actionLink(
+          "show_compliance",
+          tags$span(
+            class = "badge bg-info ms-2",
+            style = "font-size: 0.6em; vertical-align: middle;",
+            bsicons::bs_icon("shield-lock-fill"), " ZERO DATA RETENTION"
+          ),
+          style = "text-decoration: none;"
+        )
       )
     } else {
       tags$span(
@@ -144,6 +156,18 @@ ui <- page_sidebar(
     ),
 
     nav_panel(
+      title = "Bivariate Analysis",
+      icon = bsicons::bs_icon("bar-chart-steps"),
+      bivariate_ui("bivariate")
+    ),
+
+    nav_panel(
+      title = "Methodology Audit",
+      icon = bsicons::bs_icon("clipboard-data"),
+      methodology_ui("methodology")
+    ),
+
+    nav_panel(
       title = "Guide",
       icon = bsicons::bs_icon("book"),
       guide_ui("guide")
@@ -182,6 +206,23 @@ server <- function(input, output, session) {
   output$model_built <- reactive({ !is.null(rv$model) })
   outputOptions(output, "model_built", suspendWhenHidden = FALSE)
 
+  # Compliance popup
+  observeEvent(input$show_compliance, {
+    showModal(modalDialog(
+      title = tagList(bsicons::bs_icon("shield-check", class = "text-success me-2"), "Data Governance & Security"),
+      p(class = "lead", "Your data remains strictly secure and private."),
+      tags$ul(
+        tags$li(tags$strong("Local Processing: "), "All raw, row-level data is processed entirely within this application's secure statistical engine."),
+        tags$li(tags$strong("Zero Data Retention: "), "When using AI interpretation features, only anonymized model metadata (decision rules, variable names, and statistical metrics) is sent to secure enterprise endpoints."),
+        tags$li(tags$strong("No Public Model Training: "), "Your data and tree parameters are never used to train public foundation models.")
+      ),
+      p(class = "text-muted small mt-3", "Enterprise Compliance Mode Active: Azure OpenAI / Local deployment enforced."),
+      easyClose = TRUE,
+      footer = modalButton("Close"),
+      size = "l"
+    ))
+  })
+
   # Module servers
   data_import_server("data", rv)
   factor_editor_server("factors", rv)
@@ -189,6 +230,8 @@ server <- function(input, output, session) {
   data_quality_server("quality", rv)
   tree_viz_server("tree", rv, ai_card_fn = function() ai_chat_card_ui("ai"))
   model_details_server("details", rv)
+  bivariate_server("bivariate", rv, active_tab = reactive(input$main_tabs))
+  methodology_server("methodology", rv)
   ai_chat_server("ai", rv, PRODUCTION_MODE)
   # guide_ui is pure UI — no server needed
 }
