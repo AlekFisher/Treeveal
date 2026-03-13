@@ -5,6 +5,15 @@
 ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
   production_mode <- isTRUE(production_mode)
   ns <- NS(id)
+  secure_choices <- get_secure_provider_choices()
+  default_secure_provider <- get_default_secure_provider_id()
+  dev_choices <- c(
+    secure_choices,
+    "Local (Ollama)" = "ollama",
+    "Anthropic (Claude)" = "anthropic",
+    "Google (Gemini)" = "gemini",
+    "OpenAI (GPT)" = "openai"
+  )
 
   tagList(
     # Show different provider options based on production mode
@@ -13,13 +22,13 @@ ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
         div(
           class = "alert alert-info",
           bsicons::bs_icon("shield-check"),
-          " Production mode: Using secure Azure OpenAI"
+          " Production mode: Using secure Azure-backed providers"
         ),
         selectInput(
           ns("ai_provider"),
           "AI Provider",
-          choices = c("Azure OpenAI (Secure)" = "azure"),
-          selected = "azure"
+          choices = secure_choices,
+          selected = default_secure_provider
         )
       )
     } else {
@@ -33,13 +42,7 @@ ai_chat_sidebar_ui <- function(id, production_mode = FALSE) {
         selectInput(
           ns("ai_provider"),
           "AI Provider",
-          choices = c(
-            "Azure OpenAI (Secure)" = "azure",
-            "Local (Ollama)" = "ollama",
-            "Anthropic (Claude)" = "anthropic",
-            "Google (Gemini)" = "gemini",
-            "OpenAI (GPT)" = "openai"
-          ),
+          choices = dev_choices,
           selected = "openai"
         )
       )
@@ -172,49 +175,17 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Update AI model choices based on provider ---
     observeEvent(input$ai_provider, {
       rv$chat <- NULL
+      updateSelectInput(
+        session,
+        "ai_model",
+        choices = get_ai_model_choices(input$ai_provider),
+        selected = get_default_ai_model(input$ai_provider)
+      )
+    }, ignoreNULL = FALSE)
 
-      if (input$ai_provider == "azure") {
-        azure_model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
-        if (azure_model == "") azure_model <- "gpt-5-mini"
-        updateSelectInput(
-          session, "ai_model",
-          choices = setNames(azure_model, paste0("Azure: ", azure_model)),
-          selected = azure_model
-        )
-      } else if (input$ai_provider == "ollama") {
-        updateSelectInput(
-          session, "ai_model",
-          choices = c("Ministral 3 (8B)" = "ministral-3:8b"),
-          selected = "ministral-3:8b"
-        )
-      } else if (input$ai_provider == "anthropic") {
-        updateSelectInput(
-          session, "ai_model",
-          choices = c(
-            "claude-haiku-4-5-20251001" = "claude-haiku-4-5-20251001",
-            "claude-sonnet-4-20250514" = "claude-sonnet-4-20250514",
-            "claude-opus-4-20250514" = "claude-opus-4-20250514"
-          ),
-          selected = "claude-haiku-4-5-20251001"
-        )
-      } else if (input$ai_provider == "gemini") {
-        updateSelectInput(
-          session, "ai_model",
-          choices = c("gemini-3-flash-preview" = "gemini-3-flash-preview"),
-          selected = "gemini-3-flash-preview"
-        )
-      } else {
-        updateSelectInput(
-          session, "ai_model",
-          choices = c(
-            "gpt-5-mini" = "gpt-5-mini",
-            "gpt-4o" = "gpt-4o",
-            "gpt-4o-mini" = "gpt-4o-mini"
-          ),
-          selected = "gpt-5-mini"
-        )
-      }
-    })
+    observeEvent(input$ai_model, {
+      rv$chat <- NULL
+    }, ignoreInit = TRUE)
 
     # Reset chat when persona changes
     observeEvent(input$user_persona, {
@@ -224,11 +195,16 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Dev mode: auto-switch to Azure when switching to uploaded data ---
     observeEvent(rv$is_demo_data, {
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-        !is.null(input$ai_provider) && input$ai_provider != "azure") {
-        updateSelectInput(session, "ai_provider", selected = "azure")
+          !is.null(input$ai_provider) && !is_secure_ai_provider(input$ai_provider)) {
+        secure_provider_id <- get_default_secure_provider_id()
+        updateSelectInput(session, "ai_provider", selected = secure_provider_id)
         rv$chat <- NULL
         showNotification(
-          "Switched to Azure OpenAI \u2014 non-Azure providers are only available with demo datasets.",
+          paste0(
+            "Switched to ",
+            get_ai_provider_label(secure_provider_id),
+            " \u2014 non-Azure providers are only available with demo datasets."
+          ),
           type = "warning", duration = 6
         )
       }
@@ -237,12 +213,11 @@ ai_chat_server <- function(id, rv, production_mode) {
     # --- Dev mode: warning banner when non-Azure + uploaded data ---
     output$provider_warning <- renderUI({
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-        !is.null(input$ai_provider) && input$ai_provider != "azure") {
-        div(
-          class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
+          !is.null(input$ai_provider) && !is_secure_ai_provider(input$ai_provider)) {
+        div(class = "alert alert-warning mb-2", style = "font-size: 0.85em;",
           bsicons::bs_icon("shield-exclamation"),
           " Non-Azure providers are only available with demo datasets. ",
-          "Please switch to Azure OpenAI for uploaded data."
+          "Please switch to an Azure provider for uploaded data."
         )
       }
     })
@@ -410,22 +385,24 @@ ai_chat_server <- function(id, rv, production_mode) {
         )
 
         # Create chat based on provider
-        if (input$ai_provider == "azure") {
+        if (is_secure_ai_provider(input$ai_provider)) {
+          azure_config <- get_azure_provider_configs()[[input$ai_provider]]
           model <- input$ai_model
           if (model == "" || is.null(model)) {
-            model <- Sys.getenv("AZURE_OPENAI_DEPLOYMENT")
+            model <- trim_env_var(azure_config$deployment_var)
           }
-          endpoint <- Sys.getenv("AZURE_OPENAI_ENDPOINT")
-          api_key_val <- Sys.getenv("AZURE_OPENAI_API_KEY")
+          endpoint <- trim_env_var(azure_config$endpoint_var)
+          api_key_val <- trim_env_var(azure_config$api_key_var)
 
           missing_vars <- c()
-          if (api_key_val == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_API_KEY")
-          if (endpoint == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_ENDPOINT")
-          if (model == "") missing_vars <- c(missing_vars, "AZURE_OPENAI_DEPLOYMENT")
+          if (api_key_val == "") missing_vars <- c(missing_vars, azure_config$api_key_var)
+          if (endpoint == "") missing_vars <- c(missing_vars, azure_config$endpoint_var)
+          if (model == "") missing_vars <- c(missing_vars, azure_config$deployment_var)
 
           if (length(missing_vars) > 0) {
             stop(paste0(
-              "Azure OpenAI is not configured. Missing environment variables:\n\n",
+              get_ai_provider_label(input$ai_provider),
+              " is not configured. Missing environment variables:\n\n",
               paste("\u2022", missing_vars, collapse = "\n"),
               "\n\nPlease contact your administrator to set up Azure OpenAI access, ",
               "or switch to a different AI provider in the sidebar."
@@ -435,7 +412,7 @@ ai_chat_server <- function(id, rv, production_mode) {
           rv$chat <- ellmer::chat_azure_openai(
             endpoint = endpoint,
             model = model,
-            credentials = function() Sys.getenv("AZURE_OPENAI_API_KEY"),
+            credentials = function() trim_env_var(azure_config$api_key_var),
             api_version = "2025-04-01-preview",
             system_prompt = system_prompt,
             echo = "none"
@@ -510,13 +487,13 @@ ai_chat_server <- function(id, rv, production_mode) {
 
       # Dev mode guard: block non-Azure providers with uploaded data
       if (!production_mode && !isTRUE(rv$is_demo_data) &&
-        !is.null(input$ai_provider) && input$ai_provider != "azure") {
+          !is.null(input$ai_provider) && !is_secure_ai_provider(input$ai_provider)) {
         rv$chat_history <- c(rv$chat_history, list(
           list(role = "assistant", content = paste0(
             "\u26a0\ufe0f **Data Security Notice**\n\n",
             "Non-Azure AI providers are only available with demo datasets. ",
             "Your uploaded data cannot be sent to external AI services.\n\n",
-            "Please switch to **Azure OpenAI** in the sidebar to continue."
+            "Please switch to a secure **Azure provider** in the sidebar to continue."
           ))
         ))
         return(invisible(NULL))

@@ -142,7 +142,8 @@ data_import_server <- function(id, rv) {
         data <- load_data_file(input$data_file$datapath, input$data_file$name)
         file_ext <- tolower(tools::file_ext(input$data_file$name))
 
-        rv$data <- data
+        rv$active_filter <- NULL
+        rv$data_raw <- data
         rv$data_dict <- NULL
         rv$model <- NULL
         rv$chat_history <- list()
@@ -186,7 +187,8 @@ data_import_server <- function(id, rv) {
         demo <- generate_demo_dataset(input$demo_dataset)
         meta <- get_demo_datasets()[[input$demo_dataset]]
 
-        rv$data <- demo$data
+        rv$active_filter <- NULL
+        rv$data_raw <- demo$data
         dict <- demo$dict
         if (!"notes" %in% names(dict)) dict$notes <- NA_character_
         rv$data_dict <- dict
@@ -201,7 +203,8 @@ data_import_server <- function(id, rv) {
           type = "message"
         )
       } else if (isTRUE(rv$is_demo_data)) {
-        rv$data <- NULL
+        rv$active_filter <- NULL
+        rv$data_raw <- NULL
         rv$data_dict <- NULL
         rv$model <- NULL
         rv$chat_history <- list()
@@ -236,8 +239,8 @@ data_import_server <- function(id, rv) {
 
     # --- Variable Selectors ---
     observe({
-      req(rv$data)
-      var_names <- names(rv$data)
+      req(rv$data_raw)
+      var_names <- names(rv$data_raw)
 
       updateSelectInput(session, "outcome_var",
         choices = var_names,
@@ -327,8 +330,8 @@ data_import_server <- function(id, rv) {
 
     # Reset predictors to full list
     observeEvent(input$reset_predictors, {
-      req(rv$data)
-      all_vars <- names(rv$data)
+      req(rv$data_raw)
+      all_vars <- names(rv$data_raw)
       outcome <- input$outcome_var
       predictors <- setdiff(all_vars, outcome)
       updateSelectInput(session, "predictor_vars", selected = predictors)
