@@ -84,10 +84,32 @@ tree_config_server <- function(id, rv, parent_session) {
 
       # Validate predictor variables don't include outcome
       predictors <- setdiff(rv$predictor_vars, rv$outcome_var)
+      constant_predictors <- get_constant_predictors(rv$data, predictors)
+      predictors <- setdiff(predictors, constant_predictors)
 
       if (length(predictors) == 0) {
-        showNotification("Please select at least one predictor variable", type = "error")
+        if (length(constant_predictors) > 0) {
+          showNotification(
+            "All selected predictors are constant in the filtered dataset. Add a variable with variation or widen the filter.",
+            type = "error"
+          )
+        } else {
+          showNotification("Please select at least one predictor variable", type = "error")
+        }
         return()
+      }
+
+      if (length(constant_predictors) > 0) {
+        showNotification(
+          paste0(
+            "Ignoring constant predictor",
+            if (length(constant_predictors) == 1) "" else "s",
+            ": ",
+            paste(constant_predictors, collapse = ", ")
+          ),
+          type = "warning",
+          duration = 6
+        )
       }
 
       outcome_values <- unique(stats::na.omit(rv$data[[rv$outcome_var]]))

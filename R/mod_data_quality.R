@@ -299,10 +299,13 @@ data_quality_server <- function(id, rv) {
     observe({
       req(data_quality())
       dq <- data_quality()
-      
-      # Determine if there is a critical block
-      # Critical = any "Issue" status OR very few observations
-      is_critical <- (dq$n_issue > 0) || (dq$n_obs < 30)
+
+      outcome_row <- dq$summary[dq$summary$Variable == rv$outcome_var, , drop = FALSE]
+      outcome_is_blocked <- nrow(outcome_row) > 0 &&
+        outcome_row$Variance_Status %in% c("Constant", "No Data")
+
+      # Critical = unusable outcome or very small sample. Constant predictors are auto-removed downstream.
+      is_critical <- isTRUE(outcome_is_blocked) || (dq$n_obs < 30)
       rv$data_health_critical <- is_critical
     })
 

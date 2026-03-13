@@ -25,6 +25,22 @@ build_decision_tree <- function(data, outcome_var, predictors, cp, minbucket, ma
   model
 }
 
+#' Identify predictors that are constant or entirely missing in the current data slice
+get_constant_predictors <- function(data, predictors) {
+  if (is.null(data) || length(predictors) == 0) {
+    return(character(0))
+  }
+
+  predictors[vapply(predictors, function(var_name) {
+    if (!var_name %in% names(data)) {
+      return(FALSE)
+    }
+
+    column <- stats::na.omit(data[[var_name]])
+    length(unique(column)) <= 1
+  }, logical(1))]
+}
+
 #' Render a static decision tree plot (shared by mod_tree_viz and mod_export)
 render_tree_plot <- function(model, title = "") {
   n_classes <- length(attr(model, "ylevels"))

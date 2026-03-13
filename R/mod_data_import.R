@@ -52,6 +52,24 @@ data_import_ui <- function(id) {
       ),
       helpText("Select variables to include in the model"),
 
+      selectizeInput(
+        ns("remove_predictors"),
+        "Quick Remove Predictors",
+        choices = NULL,
+        selected = NULL,
+        multiple = TRUE,
+        options = list(
+          placeholder = "Search predictors to remove...",
+          plugins = list("remove_button")
+        )
+      ),
+      actionButton(
+        ns("remove_selected_predictors"),
+        "Remove Selected",
+        class = "btn-outline-danger btn-sm w-100 mb-2",
+        icon = icon("minus-circle")
+      ),
+
       # Prefix removal section
       div(
         class = "mt-2",
@@ -258,6 +276,69 @@ data_import_server <- function(id, rv) {
     })
     observe({
       rv$predictor_vars <- input$predictor_vars
+    })
+
+    observe({
+      current_predictors <- input$predictor_vars
+      selected_to_remove <- input$remove_predictors
+
+      if (is.null(current_predictors)) {
+        current_predictors <- character(0)
+      }
+      if (is.null(selected_to_remove)) {
+        selected_to_remove <- character(0)
+      }
+
+      updateSelectizeInput(
+        session,
+        "remove_predictors",
+        choices = current_predictors,
+        selected = intersect(selected_to_remove, current_predictors),
+        server = TRUE
+      )
+    })
+
+    observeEvent(input$remove_selected_predictors, {
+      vars_to_remove <- input$remove_predictors
+      current_vars <- input$predictor_vars
+
+      if (is.null(current_vars) || length(current_vars) == 0 || is.null(vars_to_remove) || length(vars_to_remove) == 0) {
+        showNotification("Choose one or more predictors to remove.", type = "warning")
+        return()
+      }
+
+      new_vars <- setdiff(current_vars, vars_to_remove)
+      updateSelectInput(session, "predictor_vars", selected = new_vars)
+      updateSelectizeInput(session, "remove_predictors", selected = character(0), server = TRUE)
+      showNotification(
+        paste0("Removed ", length(vars_to_remove), " predictor", if (length(vars_to_remove) == 1) "" else "s", "."),
+        type = "message"
+      )
+    })
+
+    observe({
+      req(rv$data, input$predictor_vars)
+
+      active_predictors <- setdiff(input$predictor_vars, input$outcome_var)
+      constant_predictors <- get_constant_predictors(rv$data, active_predictors)
+
+      if (length(constant_predictors) == 0) {
+        return()
+      }
+
+      new_vars <- setdiff(input$predictor_vars, constant_predictors)
+      updateSelectInput(session, "predictor_vars", selected = new_vars)
+
+      showNotification(
+        paste0(
+          "Removed constant predictor",
+          if (length(constant_predictors) == 1) "" else "s",
+          " after filtering: ",
+          paste(constant_predictors, collapse = ", ")
+        ),
+        type = "warning",
+        duration = 6
+      )
     })
 
     # --- Prefix Removal Buttons ---

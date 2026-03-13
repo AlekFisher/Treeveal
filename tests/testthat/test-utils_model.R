@@ -51,6 +51,20 @@ test_that("build_decision_tree has terminal nodes", {
   expect_gte(n_leaves, 2)
 })
 
+test_that("get_constant_predictors identifies constant and all-missing predictors", {
+  df <- data.frame(
+    varying = c(1, 2, 3),
+    constant = c("x", "x", "x"),
+    all_missing = c(NA, NA, NA),
+    stringsAsFactors = FALSE
+  )
+
+  expect_equal(
+    get_constant_predictors(df, c("varying", "constant", "all_missing")),
+    c("constant", "all_missing")
+  )
+})
+
 # --- render_tree_plot() ---
 test_that("render_tree_plot does not error for classification", {
   model <- build_decision_tree(
