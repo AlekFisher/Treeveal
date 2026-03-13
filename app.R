@@ -180,6 +180,7 @@ ui <- page_sidebar(
 server <- function(input, output, session) {
   # Shared reactive state
   rv <- reactiveValues(
+    data_source = NULL,
     data_raw = NULL,
     data = NULL,
     data_dict = NULL,
@@ -188,6 +189,7 @@ server <- function(input, output, session) {
     chat = NULL,
     show_ai_panel = FALSE,
     active_filter = NULL,
+    applied_factor_levels = list(),
     factor_levels_pending = list(),
     is_demo_data = FALSE,
     # Cross-module state (set by modules, read by others)

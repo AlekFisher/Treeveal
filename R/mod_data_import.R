@@ -161,11 +161,16 @@ data_import_server <- function(id, rv) {
         file_ext <- tolower(tools::file_ext(input$data_file$name))
 
         rv$active_filter <- NULL
+        rv$data_source <- list(
+          type = "file",
+          filename = input$data_file$name
+        )
         rv$data_raw <- data
         rv$data_dict <- NULL
         rv$model <- NULL
         rv$chat_history <- list()
         rv$chat <- NULL
+        rv$applied_factor_levels <- list()
         rv$factor_levels_pending <- list()
         rv$is_demo_data <- FALSE
 
@@ -206,6 +211,11 @@ data_import_server <- function(id, rv) {
         meta <- get_demo_datasets()[[input$demo_dataset]]
 
         rv$active_filter <- NULL
+        rv$data_source <- list(
+          type = "demo",
+          demo_id = input$demo_dataset,
+          label = meta$name
+        )
         rv$data_raw <- demo$data
         dict <- demo$dict
         if (!"notes" %in% names(dict)) dict$notes <- NA_character_
@@ -213,6 +223,7 @@ data_import_server <- function(id, rv) {
         rv$model <- NULL
         rv$chat_history <- list()
         rv$chat <- NULL
+        rv$applied_factor_levels <- list()
         rv$factor_levels_pending <- list()
         rv$is_demo_data <- TRUE
 
@@ -222,11 +233,13 @@ data_import_server <- function(id, rv) {
         )
       } else if (isTRUE(rv$is_demo_data)) {
         rv$active_filter <- NULL
+        rv$data_source <- NULL
         rv$data_raw <- NULL
         rv$data_dict <- NULL
         rv$model <- NULL
         rv$chat_history <- list()
         rv$chat <- NULL
+        rv$applied_factor_levels <- list()
         rv$factor_levels_pending <- list()
         rv$is_demo_data <- FALSE
       }
@@ -278,9 +291,9 @@ data_import_server <- function(id, rv) {
       rv$predictor_vars <- input$predictor_vars
     })
 
-    observe({
+    observeEvent(input$predictor_vars, {
       current_predictors <- input$predictor_vars
-      selected_to_remove <- input$remove_predictors
+      selected_to_remove <- isolate(input$remove_predictors)
 
       if (is.null(current_predictors)) {
         current_predictors <- character(0)
@@ -296,7 +309,7 @@ data_import_server <- function(id, rv) {
         selected = intersect(selected_to_remove, current_predictors),
         server = TRUE
       )
-    })
+    }, ignoreNULL = FALSE)
 
     observeEvent(input$remove_selected_predictors, {
       vars_to_remove <- input$remove_predictors

@@ -89,3 +89,44 @@ test_that("render_importance_to_file returns NULL when no importance", {
     skip("Model produced splits — cannot test NULL importance path")
   }
 })
+
+test_that("generate_analysis_script includes filter and model settings", {
+  script <- generate_analysis_script(
+    data_source = list(type = "file", filename = "analysis_input.csv"),
+    active_filter = list(
+      variable = "Specialty",
+      type = "categorical",
+      values = c("PCP", "Endocrinology")
+    ),
+    outcome_var = "High_Prescriber",
+    predictors = c("Comfortable_Initiating", "Cost_is_Barrier"),
+    cp = 0.02,
+    minbucket = 15,
+    maxdepth = 5,
+    applied_factor_levels = list(Specialty = c("PCP", "Endocrinology", "Cardiology"))
+  )
+
+  expect_true(grepl("analysis_input.csv", script, fixed = TRUE))
+  expect_true(grepl("outcome_var <- \"High_Prescriber\"", script, fixed = TRUE))
+  expect_true(grepl("predictors <- c(\"Comfortable_Initiating\", \"Cost_is_Barrier\")", script, fixed = TRUE))
+  expect_true(grepl("variable = \"Specialty\"", script, fixed = TRUE))
+  expect_true(grepl("values = c(\"PCP\", \"Endocrinology\")", script, fixed = TRUE))
+  expect_true(grepl("cp <- 0.02", script, fixed = TRUE))
+  expect_true(grepl("data_raw$Specialty <- factor", script, fixed = TRUE))
+})
+
+test_that("generate_analysis_script uses demo loader for demo datasets", {
+  script <- generate_analysis_script(
+    data_source = list(type = "demo", demo_id = "hcp", label = "HCP GLP-1 Prescribing Survey"),
+    active_filter = NULL,
+    outcome_var = "High_Prescriber",
+    predictors = c("Comfortable_Initiating"),
+    cp = 0.01,
+    minbucket = 20,
+    maxdepth = 4
+  )
+
+  expect_true(grepl("source(\"R/utils_demo_data.R\")", script, fixed = TRUE))
+  expect_true(grepl("generate_demo_dataset(\"hcp\")", script, fixed = TRUE))
+  expect_true(grepl("active_filter <- NULL", script, fixed = TRUE))
+})

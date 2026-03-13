@@ -84,6 +84,9 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
                   tags$li(downloadButton(ns("export_html"), "HTML Report (.html)",
                                          class = "dropdown-item",
                                          icon = icon("file-code"))),
+                  tags$li(downloadButton(ns("export_r_script"), "Analysis Script (.R)",
+                                         class = "dropdown-item",
+                                         icon = icon("file-lines"))),
                   tags$li(tags$hr(class = "dropdown-divider")),
                   tags$li(tags$h6(class = "dropdown-header", "Images")),
                   tags$li(downloadButton(ns("export_tree_png"), "Tree Plot (.png)",
@@ -179,6 +182,7 @@ tree_viz_server <- function(id, rv, ai_card_fn) {
     # --- Export Handlers ---
     output$export_pptx <- create_pptx_handler(rv)
     output$export_html <- create_html_handler(rv)
+    output$export_r_script <- create_r_script_handler(rv)
     output$export_tree_png <- create_tree_image_handler(rv)
     output$export_importance_png <- create_importance_image_handler(rv)
   })

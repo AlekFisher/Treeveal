@@ -175,6 +175,10 @@ factor_editor_server <- function(id, rv) {
       new_levels <- rv$factor_levels_pending[[var]]
       rv$data_raw[[var]] <- factor(rv$data_raw[[var]], levels = new_levels)
 
+      applied_levels <- rv$applied_factor_levels
+      applied_levels[[var]] <- new_levels
+      rv$applied_factor_levels <- applied_levels
+
       # Clear pending for this variable
       pending <- rv$factor_levels_pending
       pending[[var]] <- NULL
