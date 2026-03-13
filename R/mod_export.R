@@ -216,6 +216,7 @@ generate_analysis_script <- function(data_source, active_filter, outcome_var, pr
     "library(rpart.plot)",
     "",
     "# Load Dendro helper functions",
+    "source(\"R/utils_theme.R\")",
     "source(\"R/utils_data.R\")",
     "source(\"R/utils_data_filters.R\")",
     "source(\"R/utils_model.R\")",
