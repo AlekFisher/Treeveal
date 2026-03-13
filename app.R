@@ -3,8 +3,8 @@
 # with AI assistance via ellmer
 #
 # Modules are auto-loaded from R/ directory:
-#   utils_data.R, utils_model.R, utils_demo_data.R
-#   mod_data_import.R, mod_factor_editor.R, mod_tree_config.R
+  #   utils_data.R, utils_data_filters.R, utils_model.R, utils_demo_data.R
+  #   mod_data_import.R, mod_data_filter.R, mod_factor_editor.R, mod_tree_config.R
 #   mod_data_quality.R, mod_tree_viz.R, mod_model_details.R
 #   mod_ai_chat.R, mod_export.R, mod_guide.R
 
@@ -106,6 +106,13 @@ ui <- page_sidebar(
       ),
 
       accordion_panel(
+        title = "Data Filter",
+        value = "filter_panel",
+        icon = bsicons::bs_icon("funnel"),
+        data_filter_ui("filter")
+      ),
+
+      accordion_panel(
         title = "Factor Levels",
         value = "factor_panel",
         icon = bsicons::bs_icon("list-ol"),
@@ -183,12 +190,14 @@ server <- function(input, output, session) {
 
   # Shared reactive state
   rv <- reactiveValues(
+    data_raw = NULL,
     data = NULL,
     data_dict = NULL,
     model = NULL,
     chat_history = list(),
     chat = NULL,
     show_ai_panel = FALSE,
+    active_filter = NULL,
     factor_levels_pending = list(),
     is_demo_data = FALSE,
     # Cross-module state (set by modules, read by others)
@@ -225,6 +234,7 @@ server <- function(input, output, session) {
 
   # Module servers
   data_import_server("data", rv)
+  data_filter_server("filter", rv)
   factor_editor_server("factors", rv)
   tree_config_server("config", rv, parent_session = session)
   data_quality_server("quality", rv)
@@ -234,6 +244,16 @@ server <- function(input, output, session) {
   methodology_server("methodology", rv)
   ai_chat_server("ai", rv, PRODUCTION_MODE)
   # guide_ui is pure UI — no server needed
+
+  observe({
+    raw_data <- rv$data_raw
+
+    if (is.null(raw_data)) {
+      rv$data <- NULL
+    } else {
+      rv$data <- apply_single_filter(raw_data, rv$active_filter)
+    }
+  })
 }
 
 # ============================================================================

@@ -77,11 +77,25 @@ tree_config_server <- function(id, rv, parent_session) {
     observeEvent(input$run_model, {
       req(rv$data, rv$outcome_var, rv$predictor_vars)
 
+      if (nrow(rv$data) == 0) {
+        showNotification("The active filter removed all rows. Clear or widen the filter and try again.", type = "error")
+        return()
+      }
+
       # Validate predictor variables don't include outcome
       predictors <- setdiff(rv$predictor_vars, rv$outcome_var)
 
       if (length(predictors) == 0) {
         showNotification("Please select at least one predictor variable", type = "error")
+        return()
+      }
+
+      outcome_values <- unique(stats::na.omit(rv$data[[rv$outcome_var]]))
+      if (length(outcome_values) < 2) {
+        showNotification(
+          "The filtered dataset has fewer than two outcome values. Clear or widen the filter before building the tree.",
+          type = "error"
+        )
         return()
       }
 

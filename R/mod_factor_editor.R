@@ -55,8 +55,8 @@ factor_editor_server <- function(id, rv) {
 
     # Update factor variable selector when data changes
     observe({
-      req(rv$data)
-      factor_vars <- names(rv$data)[sapply(rv$data, is.factor)]
+      req(rv$data_raw)
+      factor_vars <- names(rv$data_raw)[sapply(rv$data_raw, is.factor)]
       if (length(factor_vars) == 0) {
         updateSelectInput(session, "factor_var_select",
                           choices = c("No factor variables" = ""),
@@ -70,16 +70,16 @@ factor_editor_server <- function(id, rv) {
 
     # Get current levels for selected factor (pending or actual)
     current_factor_levels <- reactive({
-      req(input$factor_var_select, rv$data)
+      req(input$factor_var_select, rv$data_raw)
       var <- input$factor_var_select
-      if (var == "" || !var %in% names(rv$data)) return(NULL)
-      if (!is.factor(rv$data[[var]])) return(NULL)
+      if (var == "" || !var %in% names(rv$data_raw)) return(NULL)
+      if (!is.factor(rv$data_raw[[var]])) return(NULL)
 
       pending <- rv$factor_levels_pending
       if (var %in% names(pending)) {
         pending[[var]]
       } else {
-        levels(rv$data[[var]])
+        levels(rv$data_raw[[var]])
       }
     })
 
@@ -164,7 +164,7 @@ factor_editor_server <- function(id, rv) {
 
     # Apply factor level reorder
     observeEvent(input$factor_apply, {
-      req(input$factor_var_select, rv$data)
+      req(input$factor_var_select, rv$data_raw)
       var <- input$factor_var_select
 
       if (!var %in% names(rv$factor_levels_pending)) {
@@ -173,7 +173,7 @@ factor_editor_server <- function(id, rv) {
       }
 
       new_levels <- rv$factor_levels_pending[[var]]
-      rv$data[[var]] <- factor(rv$data[[var]], levels = new_levels)
+      rv$data_raw[[var]] <- factor(rv$data_raw[[var]], levels = new_levels)
 
       # Clear pending for this variable
       pending <- rv$factor_levels_pending
