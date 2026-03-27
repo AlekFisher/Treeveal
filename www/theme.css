@@ -1,20 +1,27 @@
 /* ============================================================================
-   Dendro — Modern minimal (Linear / Notion inspired)
+   Dendro — Adelphi Research Branded Theme
+   Following Adelphi App Theme Guide for suite consistency
    ============================================================================ */
 
 :root {
-  /* Palette */
-  --color-primary: #1a1a1a;
-  --color-secondary: #737373;
-  --color-tertiary: #a3a3a3;
+  /* Adelphi Core Palette */
+  --adelphi-primary: #00A6AD;
+  --adelphi-primary-deep: #007F8F;
+  --adelphi-primary-dark: #00566F;
+  --adelphi-text: #24313B;
+  --adelphi-text-muted: #51626F;
+  --adelphi-bg: #F3FBFA;
+  --adelphi-surface: #FFFFFF;
+  --adelphi-surface-soft: #F9FCFB;
+  --adelphi-accent: #F2B82D;
+  --adelphi-accent-hover: #F5C95B;
+  --adelphi-border: rgba(0, 89, 110, 0.10);
+  --adelphi-shadow: 0 18px 44px rgba(16, 52, 68, 0.08);
+  --adelphi-radius-lg: 28px;
+  --adelphi-radius-md: 18px;
+  --adelphi-radius-sm: 10px;
 
-  /* Accent */
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-soft: #eff6ff;
-  --color-accent-muted: #93c5fd;
-
-  /* Semantic */
+  /* Semantic colors */
   --color-success: #059669;
   --color-success-soft: #d1fae5;
   --color-warning: #d97706;
@@ -24,18 +31,10 @@
   --color-info: #0284c7;
   --color-info-soft: #e0f2fe;
 
-  /* Surfaces */
-  --bg-primary: #ffffff;
-  --bg-secondary: #fafafa;
-  --bg-card: #ffffff;
-
-  /* Borders — very subtle */
-  --border-color: #e5e5e5;
-  --border-light: #f0f0f0;
-
   /* Typography */
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-headline: Georgia, "Times New Roman", serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -45,678 +44,373 @@
   --spacing-xl: 2rem;
   --spacing-2xl: 3rem;
 
-  /* Radius — tight */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-pill: 9999px;
-
-  /* Shadows — barely there */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
-
   /* Transitions */
-  --transition-fast: 120ms ease;
-  --transition-normal: 200ms ease;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ----------------------------------------------------------------------------
    Global
    ---------------------------------------------------------------------------- */
 body {
-  font-family: var(--font-primary);
-  background: var(--bg-primary);
-  color: var(--color-primary);
+  font-family: var(--font-body);
+  background: var(--adelphi-bg);
+  color: var(--adelphi-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  letter-spacing: -0.011em;
   font-size: 0.9375rem;
   line-height: 1.6;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6 {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--color-primary);
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: var(--font-headline);
+  font-weight: 500;
+  color: var(--adelphi-text);
+  letter-spacing: -0.01em;
 }
 
 p {
-  color: var(--color-secondary);
-  line-height: 1.6;
+  color: var(--adelphi-text-muted);
+  line-height: 1.7;
 }
 
 ::selection {
-  background: var(--color-accent-soft);
-  color: var(--color-primary);
+  background: rgba(0, 166, 173, 0.15);
+  color: var(--adelphi-text);
 }
 
 /* ----------------------------------------------------------------------------
-   Navbar — seamless, no border
+   Branded Header
    ---------------------------------------------------------------------------- */
-.navbar,
-.bslib-page-title {
-  background: #0d7377 !important;
+.navbar, .bslib-page-title {
+  background: linear-gradient(135deg, var(--adelphi-primary-dark) 0%, var(--adelphi-primary) 100%) !important;
   border-bottom: none !important;
-  box-shadow: none !important;
-  position: relative;
-  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 89, 110, 0.08) !important;
+  padding: 1rem 1.5rem;
 }
 
-.navbar-brand,
-.bslib-page-title {
-  font-weight: 600 !important;
-  font-size: 1.125rem !important;
+.navbar-brand, .bslib-page-title {
+  font-family: var(--font-headline) !important;
+  font-weight: 500 !important;
+  font-size: 1.5rem !important;
   color: #ffffff !important;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Mode badges — pill style */
 .badge.bg-success {
-  background: var(--color-success-soft) !important;
-  color: var(--color-success) !important;
-  font-weight: 500;
-  border-radius: var(--radius-pill);
-  padding: 0.25em 0.7em;
+  background: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.3em 0.8em;
   font-size: 0.65em;
-  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .badge.bg-warning {
-  background: var(--color-warning-soft) !important;
-  color: var(--color-warning) !important;
-  font-weight: 500;
-  border-radius: var(--radius-pill);
-  padding: 0.25em 0.7em;
+  background: var(--adelphi-accent) !important;
+  color: var(--adelphi-text) !important;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.3em 0.8em;
   font-size: 0.65em;
-  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.badge.bg-secondary {
-  background: var(--color-accent-soft) !important;
-  color: var(--color-accent) !important;
-  font-weight: 500;
-  border-radius: var(--radius-pill);
-  padding: 0.25em 0.7em;
-  border: none;
+.badge.bg-info {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.3em 0.8em;
+  font-size: 0.65em;
 }
 
 /* ----------------------------------------------------------------------------
-   Sidebar — seamless with faint divider
+   Simplified Sidebar — Less Intimidating
    ---------------------------------------------------------------------------- */
-.bslib-sidebar-layout>.sidebar {
-  background: var(--bg-primary) !important;
-  border-right: 1px solid var(--border-light) !important;
+.bslib-sidebar-layout > .sidebar {
+  background: var(--adelphi-surface) !important;
+  border-right: 1px solid var(--adelphi-border) !important;
   box-shadow: none !important;
+  padding: var(--spacing-lg);
 }
 
 .sidebar-title {
-  font-size: 0.6875rem !important;
+  font-family: var(--font-headline) !important;
+  font-size: 1.125rem !important;
   font-weight: 500 !important;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-tertiary) !important;
-  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--adelphi-text) !important;
+  padding: 0 0 var(--spacing-md) 0;
+  margin-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--adelphi-primary);
 }
 
-/* Accordion */
+/* Simplified accordion — more breathing room */
 .accordion {
   --bs-accordion-bg: transparent;
-  --bs-accordion-border-color: var(--border-light);
+  --bs-accordion-border-color: transparent;
+  gap: var(--spacing-sm);
 }
 
 .accordion-item {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border-light);
+  background: var(--adelphi-surface-soft);
+  border: 1px solid var(--adelphi-border);
+  border-radius: var(--adelphi-radius-sm) !important;
+  margin-bottom: var(--spacing-md);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.accordion-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 89, 110, 0.06);
 }
 
 .accordion-button {
-  font-weight: 500;
-  font-size: 0.8125rem;
-  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--adelphi-text);
   background: transparent !important;
-  padding: 0.75rem var(--spacing-sm);
+  padding: 0.875rem 1rem;
   box-shadow: none !important;
   transition: color var(--transition-fast);
-  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-family: var(--font-body);
 }
 
 .accordion-button:not(.collapsed) {
-  color: var(--color-accent);
+  color: var(--adelphi-primary);
   background: transparent !important;
 }
 
 .accordion-button::after {
-  width: 0.8rem;
-  height: 0.8rem;
-  background-size: 0.8rem;
-  opacity: 0.4;
+  width: 1rem;
+  height: 1rem;
+  background-size: 1rem;
+  filter: brightness(0) saturate(100%) invert(47%) sepia(95%) saturate(1071%) hue-rotate(146deg);
   transition: transform var(--transition-normal);
 }
 
 .accordion-body {
-  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-md) 1rem var(--spacing-lg);
+  background: var(--adelphi-surface);
 }
 
 /* ----------------------------------------------------------------------------
-   Cards — borderless, minimal
+   Cards — Rounded, soft shadows
    ---------------------------------------------------------------------------- */
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg) !important;
-  box-shadow: none;
+  background: var(--adelphi-surface);
+  border: 1px solid var(--adelphi-border);
+  border-radius: var(--adelphi-radius-md) !important;
+  box-shadow: var(--adelphi-shadow);
   overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  box-shadow: 0 20px 50px rgba(16, 52, 68, 0.12);
 }
 
 .card-header {
-  background: transparent !important;
-  border-bottom: 1px solid var(--border-light);
-  padding: 0.875rem var(--spacing-lg);
-  font-weight: 500;
-  font-size: 0.8125rem;
-  letter-spacing: -0.01em;
-  color: var(--color-secondary);
-}
-
-.card-header.bg-primary {
-  background: var(--color-primary) !important;
-  color: var(--bg-primary) !important;
-}
-
-.card-header.bg-secondary {
-  background: var(--bg-secondary) !important;
-  color: var(--color-primary) !important;
+  background: linear-gradient(to bottom, var(--adelphi-surface-soft), var(--adelphi-surface)) !important;
+  border-bottom: 1px solid var(--adelphi-border);
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  color: var(--adelphi-text);
+  text-transform: uppercase;
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: 1.5rem 1.25rem;
 }
 
 /* ----------------------------------------------------------------------------
-   Value Boxes — clean, left-border accent
-   ---------------------------------------------------------------------------- */
-.bslib-value-box {
-  border-radius: var(--radius-md) !important;
-  border: 1px solid var(--border-light) !important;
-  box-shadow: none !important;
-  overflow: hidden;
-}
-
-.bslib-value-box .value-box-value {
-  font-weight: 700;
-  font-size: 2rem;
-  letter-spacing: -0.03em;
-}
-
-.bslib-value-box .value-box-title {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-tertiary);
-  opacity: 1;
-}
-
-.bslib-value-box.bg-primary {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-accent) !important;
-}
-
-.bslib-value-box.bg-secondary {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-secondary) !important;
-}
-
-.bslib-value-box.bg-success {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-success) !important;
-}
-
-.bslib-value-box.bg-info {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-info) !important;
-}
-
-.bslib-value-box.bg-warning {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-warning) !important;
-}
-
-.bslib-value-box.bg-danger {
-  background: var(--bg-primary) !important;
-  color: var(--color-primary) !important;
-  border-left: 3px solid var(--color-danger) !important;
-}
-
-.bslib-value-box .value-box-showcase .bi {
-  opacity: 0.35;
-}
-
-/* ----------------------------------------------------------------------------
-   Buttons — flat, understated
+   Buttons — Yellow primary CTA
    ---------------------------------------------------------------------------- */
 .btn {
-  font-weight: 500;
-  font-size: 0.8125rem;
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 24px;
+  padding: 0.65rem 1.5rem;
   transition: all var(--transition-fast);
   border: none;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .btn-primary {
-  background: var(--color-accent);
-  color: white;
-  box-shadow: none;
+  background: var(--adelphi-accent);
+  color: var(--adelphi-text);
+  box-shadow: 0 2px 8px rgba(242, 184, 45, 0.25);
 }
 
 .btn-primary:hover {
-  background: var(--color-accent-hover);
-  color: white;
-}
-
-.btn-primary:active {
-  background: var(--color-accent-hover);
+  background: var(--adelphi-accent-hover);
+  color: var(--adelphi-text);
+  box-shadow: 0 4px 12px rgba(242, 184, 45, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-outline-primary {
   background: transparent;
-  color: var(--color-accent);
-  border: 1px solid var(--border-color);
+  color: var(--adelphi-primary);
+  border: 2px solid var(--adelphi-primary);
 }
 
 .btn-outline-primary:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  border-color: var(--color-accent-muted);
+  background: var(--adelphi-primary);
+  color: #ffffff;
+  border-color: var(--adelphi-primary);
 }
 
 .btn-outline-secondary {
   background: transparent;
-  color: var(--color-secondary);
-  border: 1px solid var(--border-color);
+  color: var(--adelphi-text-muted);
+  border: 1px solid var(--adelphi-border);
 }
 
 .btn-outline-secondary:hover {
-  background: var(--bg-secondary);
-  color: var(--color-primary);
-  border-color: var(--border-color);
-}
-
-.btn-outline-danger {
-  background: transparent;
-  color: var(--color-danger);
-  border: 1px solid var(--border-color);
-}
-
-.btn-outline-danger:hover {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-  border-color: var(--color-danger);
+  background: var(--adelphi-surface-soft);
+  color: var(--adelphi-text);
+  border-color: var(--adelphi-border);
 }
 
 .btn-outline-light {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-outline-light:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 .btn-lg {
-  padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
-  border-radius: var(--radius-md);
-  font-weight: 600;
+  padding: 0.875rem 2rem;
+  font-size: 0.9375rem;
+  border-radius: 28px;
+  font-weight: 700;
 }
 
 .btn-sm {
-  padding: 0.3rem 0.75rem;
-  font-size: 0.75rem;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-}
-
-/* Build Decision Tree button */
-.btn-primary.btn-lg.w-100 {
-  background: var(--color-accent);
+  padding: 0.4rem 1rem;
+  font-size: 0.8125rem;
+  border-radius: 20px;
 }
 
 /* ----------------------------------------------------------------------------
-   Form Controls — thin, clean
+   Form Controls — Clean, teal accents
    ---------------------------------------------------------------------------- */
-.form-control,
-.form-select {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  background-color: var(--bg-primary);
-  color: var(--color-primary);
+.form-control, .form-select {
+  border: 1px solid var(--adelphi-border);
+  border-radius: var(--adelphi-radius-sm);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+  background-color: var(--adelphi-surface);
+  color: var(--adelphi-text);
 }
 
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+.form-control:focus, .form-select:focus {
+  border-color: var(--adelphi-primary);
+  box-shadow: 0 0 0 3px rgba(0, 166, 173, 0.1);
   outline: none;
 }
 
 .form-label {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.8125rem;
-  color: var(--color-primary);
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.01em;
+  color: var(--adelphi-text);
+  margin-bottom: 0.375rem;
+  letter-spacing: 0.01em;
 }
 
 .form-text {
   font-size: 0.75rem;
-  color: var(--color-tertiary);
-}
-
-/* File input */
-.form-control[type="file"] {
-  padding: 0.4rem;
-}
-
-.form-control[type="file"]::file-selector-button {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.75rem;
-  margin-right: 0.6rem;
-  font-weight: 500;
-  font-size: 0.8125rem;
-  color: var(--color-primary);
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.form-control[type="file"]::file-selector-button:hover {
-  background: var(--border-light);
-}
-
-/* Checkbox */
-.form-check-input {
-  width: 1rem;
-  height: 1rem;
-  border: 1.5px solid var(--border-color);
-  border-radius: 4px;
-  transition: all var(--transition-fast);
-}
-
-.form-check-input:checked {
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
-.form-check-input:focus {
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-}
-
-/* Range slider */
-.irs--shiny {
-  --irs-handle-bg: var(--color-accent);
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  height: 4px;
-  background: var(--border-color);
-  border-radius: 2px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--color-accent);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-/* Textarea */
-textarea.form-control {
-  resize: vertical;
-  min-height: 80px;
-}
-
-/* Help text */
-.help-block,
-.form-text {
-  color: var(--color-tertiary);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  color: var(--adelphi-text-muted);
 }
 
 /* ----------------------------------------------------------------------------
-   Tabs — clean underline style
+   Tabs — Teal active state
    ---------------------------------------------------------------------------- */
 .nav-tabs {
-  border-bottom: 1px solid var(--border-light);
-  gap: 0;
-  padding: 0 var(--spacing-sm);
+  border-bottom: 2px solid var(--adelphi-border);
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-md);
+  background: var(--adelphi-surface);
 }
 
 .nav-tabs .nav-link {
   border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--color-tertiary);
-  font-weight: 500;
-  font-size: 0.8125rem;
-  padding: 0.75rem var(--spacing-md);
-  margin-bottom: -1px;
+  border-bottom: 3px solid transparent;
+  color: var(--adelphi-text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.875rem var(--spacing-lg);
+  margin-bottom: -2px;
   transition: all var(--transition-fast);
-  letter-spacing: -0.01em;
+  border-radius: var(--adelphi-radius-sm) var(--adelphi-radius-sm) 0 0;
 }
 
 .nav-tabs .nav-link:hover {
-  color: var(--color-primary);
-  border-bottom-color: var(--border-color);
-  background: transparent;
+  color: var(--adelphi-text);
+  border-bottom-color: rgba(0, 166, 173, 0.3);
+  background: var(--adelphi-surface-soft);
 }
 
 .nav-tabs .nav-link.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-accent);
-  background: transparent;
-  font-weight: 600;
-}
-
-.nav-tabs .nav-link .bi {
-  margin-right: 0.35rem;
-  opacity: 0.5;
-}
-
-.nav-tabs .nav-link.active .bi {
-  opacity: 0.7;
+  color: var(--adelphi-primary);
+  border-bottom-color: var(--adelphi-primary);
+  background: var(--adelphi-surface);
+  font-weight: 700;
 }
 
 /* ----------------------------------------------------------------------------
-   Data Tables — clean, minimal chrome
+   Data Tables — Clean minimal
    ---------------------------------------------------------------------------- */
 .dataTables_wrapper {
-  font-size: 0.8125rem;
-}
-
-table.dataTable {
-  border-collapse: collapse !important;
+  font-size: 0.875rem;
 }
 
 table.dataTable thead th {
-  background: transparent;
-  font-weight: 500;
-  font-size: 0.6875rem;
+  background: var(--adelphi-surface-soft);
+  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-tertiary);
-  border-bottom: 1px solid var(--border-color) !important;
-  padding: 0.625rem var(--spacing-md) !important;
+  letter-spacing: 0.05em;
+  color: var(--adelphi-text-muted);
+  border-bottom: 2px solid var(--adelphi-border) !important;
+  padding: 0.75rem var(--spacing-md) !important;
 }
 
 table.dataTable tbody td {
-  padding: 0.625rem var(--spacing-md) !important;
-  border-bottom: 1px solid var(--border-light);
-  vertical-align: middle;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-}
-
-table.dataTable tbody tr {
-  transition: background var(--transition-fast);
+  padding: 0.75rem var(--spacing-md) !important;
+  border-bottom: 1px solid var(--adelphi-border);
+  color: var(--adelphi-text);
 }
 
 table.dataTable tbody tr:hover {
-  background: var(--bg-secondary) !important;
-}
-
-table.dataTable.stripe tbody tr.odd {
-  background: var(--bg-primary);
-}
-
-table.dataTable.stripe tbody tr.even {
-  background: var(--bg-primary);
-}
-
-/* DataTable controls */
-.dataTables_filter input {
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 0.4rem 0.75rem !important;
-  margin-left: 0.5rem;
-  font-size: 0.8125rem;
-  transition: all var(--transition-fast);
-}
-
-.dataTables_filter input:focus {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-  outline: none;
-}
-
-.dataTables_info {
-  color: var(--color-tertiary);
-  font-size: 0.75rem;
-  font-weight: 400;
-}
-
-.dataTables_paginate .paginate_button {
-  border-radius: var(--radius-sm) !important;
-  margin: 0 1px;
-  font-weight: 500;
-  font-size: 0.75rem;
-  transition: all var(--transition-fast);
-}
-
-.dataTables_paginate .paginate_button.current {
-  background: var(--color-accent) !important;
-  border-color: var(--color-accent) !important;
-  color: white !important;
-}
-
-.dataTables_paginate .paginate_button:hover {
-  background: var(--bg-secondary) !important;
-  border-color: var(--border-color) !important;
-  color: var(--color-primary) !important;
-}
-
-.dataTables_length select {
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 0.2rem 0.4rem !important;
-  font-size: 0.8125rem;
+  background: var(--adelphi-surface-soft) !important;
 }
 
 /* ----------------------------------------------------------------------------
-   Chat Interface
-   ---------------------------------------------------------------------------- */
-#chat_container {
-  background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-light) !important;
-  border-radius: var(--radius-md) !important;
-}
-
-#chat_container .d-flex.justify-content-end>div {
-  background: var(--color-accent) !important;
-  color: white !important;
-  border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg) !important;
-}
-
-#chat_container .d-flex.justify-content-start>div {
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-light) !important;
-  border-left: 2px solid var(--color-accent-muted) !important;
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px !important;
-}
-
-#chat_container h1,
-#chat_container h2,
-#chat_container h3,
-#chat_container h4,
-#chat_container h5,
-#chat_container h6 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 1rem 0 0.4rem 0;
-  line-height: 1.3;
-}
-
-#chat_container h1:first-child,
-#chat_container h2:first-child,
-#chat_container h3:first-child {
-  margin-top: 0;
-}
-
-.btn-outline-primary.btn-sm {
-  border-color: var(--border-color);
-  color: var(--color-secondary);
-  font-weight: 500;
-}
-
-.btn-outline-primary.btn-sm:hover {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  border-color: var(--color-accent-muted);
-}
-
-/* ----------------------------------------------------------------------------
-   Alerts — subtle
+   Alerts — Subtle with left border
    ---------------------------------------------------------------------------- */
 .alert {
   border: none;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  padding: 0.75rem var(--spacing-md);
-  font-weight: 400;
-  border-left: 3px solid;
+  border-radius: var(--adelphi-radius-sm);
+  font-size: 0.875rem;
+  padding: 0.875rem 1.125rem;
+  border-left: 4px solid;
 }
 
 .alert-info {
@@ -737,38 +431,21 @@ table.dataTable.stripe tbody tr.even {
   border-left-color: var(--color-success);
 }
 
-.alert-danger {
-  background: var(--color-danger-soft);
-  color: #991b1b;
-  border-left-color: var(--color-danger);
-}
-
-/* ----------------------------------------------------------------------------
-   Notifications
-   ---------------------------------------------------------------------------- */
-.shiny-notification {
-  border-radius: var(--radius-md) !important;
-  border: 1px solid var(--border-light) !important;
-  box-shadow: var(--shadow-lg) !important;
-  font-weight: 400;
-  font-size: 0.8125rem;
-}
-
 /* ----------------------------------------------------------------------------
    Utilities
    ---------------------------------------------------------------------------- */
 .text-muted {
-  color: var(--color-tertiary) !important;
+  color: var(--adelphi-text-muted) !important;
 }
 
 hr {
-  border-color: var(--border-light);
+  border-color: var(--adelphi-border);
   opacity: 1;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -776,80 +453,26 @@ hr {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
+  background: var(--adelphi-border);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-tertiary);
-}
-
-pre,
-code {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-}
-
-pre {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-md);
-  overflow-x: auto;
-}
-
-.shiny-text-output[id$="_stats"],
-.shiny-text-output[id$="_rules"] {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-md);
-  white-space: pre-wrap;
-  border: 1px solid var(--border-light);
+  background: rgba(0, 166, 173, 0.3);
 }
 
 /* ----------------------------------------------------------------------------
    Loading / Progress
    ---------------------------------------------------------------------------- */
-.shiny-busy {
-  cursor: progress;
-}
-
 .progress {
-  border-radius: var(--radius-pill);
-  background: var(--bg-secondary);
-  overflow: hidden;
-  height: 4px;
+  border-radius: 20px;
+  background: var(--adelphi-surface-soft);
+  height: 6px;
 }
 
 .progress-bar {
-  background: var(--color-accent) !important;
-  border-radius: var(--radius-pill);
-}
-
-/* ----------------------------------------------------------------------------
-   Empty States
-   ---------------------------------------------------------------------------- */
-.text-center.py-5 {
-  padding: var(--spacing-2xl) var(--spacing-lg) !important;
-}
-
-.text-center.py-5 h4 {
-  font-weight: 500;
-  margin-top: var(--spacing-md);
-  color: var(--color-secondary);
-  font-size: 1rem;
-}
-
-.text-center.py-5 p {
-  color: var(--color-tertiary);
-  font-size: 0.875rem;
-}
-
-.text-center.py-5 .bi {
-  color: var(--color-tertiary) !important;
-  opacity: 0.3;
+  background: var(--adelphi-primary) !important;
+  border-radius: 20px;
 }
 
 /* ----------------------------------------------------------------------------
@@ -860,462 +483,25 @@ pre {
     padding: var(--spacing-md);
   }
 
-  .btn-lg {
-    padding: 0.625rem 1.25rem;
+  .navbar, .bslib-page-title {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-brand, .bslib-page-title {
+    font-size: 1.25rem !important;
   }
 }
 
 /* ----------------------------------------------------------------------------
-   Plots
-   ---------------------------------------------------------------------------- */
-.shiny-plot-output {
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-/* ----------------------------------------------------------------------------
-   Overlay Suppression
+   Shiny overrides
    ---------------------------------------------------------------------------- */
 #shiny-disconnected-overlay,
 #ss-connect-dialog {
   display: none !important;
 }
 
-/* ----------------------------------------------------------------------------
-   Guide
-   ---------------------------------------------------------------------------- */
-#guide_accordion {
-  --bs-accordion-border-color: var(--border-light);
-  --bs-accordion-btn-padding-x: 1.25rem;
-  --bs-accordion-btn-padding-y: 0.875rem;
-  --bs-accordion-body-padding-x: 1.25rem;
-  --bs-accordion-body-padding-y: 1rem;
-}
-
-#guide_accordion .accordion-item {
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md) !important;
-  margin-bottom: 0.375rem;
-  overflow: hidden;
-}
-
-#guide_accordion .accordion-item:has(.accordion-button:not(.collapsed)) {
-  border-color: var(--border-color);
-}
-
-#guide_accordion .accordion-button {
-  font-weight: 500;
-  font-size: 0.875rem;
-  background: var(--bg-primary);
-  border-radius: var(--radius-md) !important;
-}
-
-#guide_accordion .accordion-button:not(.collapsed) {
-  background: var(--bg-secondary);
-  color: var(--color-primary);
-  box-shadow: none;
-}
-
-#guide_accordion .accordion-body {
-  background: var(--bg-primary);
-  font-size: 0.8125rem;
-  line-height: 1.6;
-}
-
-#guide_accordion .accordion-body p {
-  color: var(--color-secondary);
-}
-
-#guide_accordion .accordion-body .lead {
-  font-size: 0.9375rem;
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.step-number {
-  width: 24px;
-  height: 24px;
-  background: var(--color-accent);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.6875rem;
-  flex-shrink: 0;
-}
-
-#guide_accordion dl {
-  margin-bottom: 0;
-}
-
-#guide_accordion dt {
-  font-weight: 600;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-  margin-top: 0.625rem;
-}
-
-#guide_accordion dt:first-child {
-  margin-top: 0;
-}
-
-#guide_accordion dd {
-  margin-left: 0;
-  margin-bottom: 0;
-  font-size: 0.8125rem;
-  color: var(--color-secondary);
-}
-
-#guide_accordion .table {
-  font-size: 0.8125rem;
-  margin-bottom: 0;
-}
-
-#guide_accordion .table th {
-  font-weight: 500;
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-tertiary);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.5rem;
-  background: transparent;
-}
-
-#guide_accordion .table td {
-  padding: 0.5rem;
-  vertical-align: top;
-  border-bottom: 1px solid var(--border-light);
-}
-
-#guide_accordion .alert {
-  padding: 0.625rem;
-  margin-bottom: 0;
-}
-
-.guide-list {
-  padding-left: 1.25rem;
-}
-
-.guide-list li {
-  margin-bottom: 0.375rem;
-  line-height: 1.5;
-  color: var(--color-secondary);
-  font-size: 0.8125rem;
-}
-
-.guide-list li strong {
-  color: var(--color-primary);
-}
-
-/* ----------------------------------------------------------------------------
-   Selectize — clean inputs
-   ---------------------------------------------------------------------------- */
-.selectize-input {
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: none !important;
-  padding: 0.4rem 0.65rem !important;
-  background: var(--bg-primary) !important;
-  font-size: 0.8125rem;
-  transition: all var(--transition-fast);
-}
-
-.selectize-input.focus {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
-}
-
-.selectize-dropdown {
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-lg) !important;
-  overflow: hidden;
-}
-
-.selectize-dropdown .option {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  transition: background var(--transition-fast);
-}
-
-.selectize-dropdown .option.active {
-  background: var(--color-accent-soft) !important;
-  color: var(--color-accent) !important;
-}
-
-.selectize-dropdown .option:hover {
-  background: var(--bg-secondary) !important;
-}
-
-/* Multi-select tags */
-.selectize-input .item {
-  background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-pill) !important;
-  color: var(--color-primary) !important;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.1rem 0.5rem !important;
-}
-
-.selectize-input .item .remove {
-  color: var(--color-tertiary) !important;
-  border-left-color: var(--border-color) !important;
-}
-
-/* ----------------------------------------------------------------------------
-   Factor Level Editor
-   ---------------------------------------------------------------------------- */
-.factor-level-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.factor-level-item {
-  padding: 0.3rem 0.5rem;
-  border-bottom: 1px solid var(--border-light);
-  font-size: 0.8125rem;
-  transition: background var(--transition-fast);
-}
-
-.factor-level-item:hover {
-  background: var(--bg-secondary);
-}
-
-.factor-level-item:first-child {
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
-/* ----------------------------------------------------------------------------
-   Shiny overrides
-   ---------------------------------------------------------------------------- */
-#shiny-notification-panel {
-  top: 56px !important;
-  right: 16px !important;
-  width: 340px !important;
-}
-
-.shiny-bound-output {
-  transition: opacity var(--transition-normal);
-}
-
-.btn .fa-file-powerpoint {
-  color: #d14424;
-}
-
-.progress-text {
-  font-weight: 500;
-  color: var(--color-primary);
-}
-
-/* ----------------------------------------------------------------------------
-   Tree View Toggle — segmented control
-   ---------------------------------------------------------------------------- */
-.tree-view-toggle {
-  display: inline-flex;
-}
-
-.tree-view-toggle .shiny-input-radiogroup {
-  display: inline-flex;
-  margin: 0;
-}
-
-.tree-view-toggle .shiny-options-group {
-  display: inline-flex;
-  gap: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-}
-
-.tree-view-toggle .radio-inline {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.tree-view-toggle .radio-inline input[type="radio"] {
-  display: none;
-}
-
-.tree-view-toggle .radio-inline label {
-  display: block;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-secondary);
-  cursor: pointer;
-  border-radius: calc(var(--radius-sm) - 2px);
-  transition: all var(--transition-fast);
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.tree-view-toggle .radio-inline input[type="radio"]:checked+label,
-.tree-view-toggle .radio-inline label.active {
-  background: var(--bg-primary);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-xs);
-}
-
-.tree-view-toggle .radio-inline label:hover {
-  color: var(--color-primary);
-}
-
-/* ----------------------------------------------------------------------------
-   Export Dropdown
-   ---------------------------------------------------------------------------- */
-.export-dropdown .dropdown-menu {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: var(--spacing-xs) 0;
-  min-width: 220px;
-  background: var(--bg-primary);
-}
-
-.export-dropdown .dropdown-header {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-tertiary);
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xs);
-}
-
-.export-dropdown .dropdown-divider {
-  border-color: var(--border-light);
-  margin: var(--spacing-xs) 0;
-}
-
-.export-dropdown .dropdown-item,
-.export-dropdown .dropdown-item.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem var(--spacing-md);
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: var(--color-primary);
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  width: 100%;
-  text-align: left;
-  transition: background var(--transition-fast);
-  box-shadow: none;
-}
-
-.export-dropdown .dropdown-item:hover,
-.export-dropdown .dropdown-item.btn:hover {
-  background: var(--bg-secondary);
-  color: var(--color-primary);
-}
-
-.export-dropdown .dropdown-item .fa,
-.export-dropdown .dropdown-item .fas,
-.export-dropdown .dropdown-item .far {
-  width: 1rem;
-  text-align: center;
-  color: var(--color-secondary);
-  font-size: 0.8125rem;
-}
-
-.export-dropdown .dropdown-item .fa-file-powerpoint {
-  color: #d14424;
-}
-
-.export-dropdown .dropdown-item .fa-file-code {
-  color: var(--color-accent);
-}
-
-.export-dropdown .dropdown-item .fa-image {
-  color: var(--color-success);
-}
-
-.export-dropdown .dropdown-item .fa-chart-bar {
-  color: #7c3aed;
-}
-
-/* ----------------------------------------------------------------------------
-   visNetwork — clean overrides
-   ---------------------------------------------------------------------------- */
-.vis-network {
-  border: none !important;
-  outline: none !important;
-}
-
-.vis-navigation .vis-button {
-  background-color: var(--bg-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-xs) !important;
-}
-
-.vis-navigation .vis-button:hover {
-  background-color: var(--bg-secondary) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-.vis-tooltip {
-  font-family: var(--font-primary) !important;
-  font-size: 0.8125rem !important;
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: var(--shadow-md) !important;
-  padding: var(--spacing-sm) var(--spacing-md) !important;
-  color: var(--color-primary) !important;
-  max-width: 300px;
-}
-
-/* ----------------------------------------------------------------------------
-   Cicerone Guided Tour Overrides
-   ---------------------------------------------------------------------------- */
-.driver-popover {
-  background-color: var(--color-primary) !important;
-  color: #ffffff !important;
-}
-
-.driver-popover .driver-popover-title {
-  color: #ffffff !important;
-  font-weight: 600 !important;
-}
-
-.driver-popover .driver-popover-description {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.driver-popover .driver-popover-footer .driver-btn-group button {
-  color: var(--color-primary) !important;
-  text-shadow: none !important;
-}
-
-/* For the Close X button */
-.driver-popover .driver-popover-close-btn {
-  color: #ffffff !important;
-}
-
-/* ----------------------------------------------------------------------------
-   UI Polish: Radio Toggle Spacing
-   ---------------------------------------------------------------------------- */
-.tree-view-toggle .shiny-options-group {
-  display: flex !important;
-  gap: 20px !important;
-  margin-top: 5px;
-}
-
-.tree-view-toggle .radio-inline {
-  margin-right: 20px !important;
-  margin-left: 0 !important;
-}
-
-.tree-view-toggle label.radio-inline {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.shiny-notification {
+  border-radius: var(--adelphi-radius-sm) !important;
+  border: 1px solid var(--adelphi-border) !important;
+  box-shadow: var(--adelphi-shadow) !important;
 }

@@ -36,53 +36,68 @@ PRODUCTION_MODE <- as.logical(Sys.getenv("PRODUCTION_MODE", "TRUE"))
 # ============================================================================
 
 ui <- page_sidebar(
-  title = tags$span(
+  title = tags$div(
     id = "app_title_area",
-    "Dendro",
-    if (PRODUCTION_MODE) {
-      tagList(
-        tags$span(
-          class = "badge bg-success ms-2",
-          style = "font-size: 0.6em; vertical-align: middle;",
-          "PRODUCTION"
-        ),
-        actionLink(
-          "show_compliance",
-          tags$span(
-            class = "badge bg-info ms-2",
-            style = "font-size: 0.6em; vertical-align: middle;",
-            bsicons::bs_icon("shield-lock-fill"), " ZERO DATA RETENTION"
-          ),
-          style = "text-decoration: none;"
-        )
-      )
-    } else {
+    style = "display: flex; align-items: center; justify-content: space-between; width: 100%;",
+    tags$div(
+      style = "display: flex; align-items: center; gap: 1rem;",
       tags$span(
-        class = "badge bg-warning ms-2",
-        style = "font-size: 0.6em; vertical-align: middle;",
-        "DEV"
+        style = "font-family: Georgia, 'Times New Roman', serif; font-size: 1.5rem; font-weight: 500;",
+        "Dendro"
+      ),
+      tags$span(
+        style = "color: rgba(255,255,255,0.7); font-size: 0.875rem; font-weight: 400; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 1rem;",
+        "Decision Tree Analysis"
+      ),
+      if (PRODUCTION_MODE) {
+        tagList(
+          tags$span(
+            class = "badge bg-success",
+            "PRODUCTION"
+          ),
+          actionLink(
+            "show_compliance",
+            tags$span(
+              class = "badge bg-info",
+              bsicons::bs_icon("shield-lock-fill"), " ZERO DATA RETENTION"
+            ),
+            style = "text-decoration: none;"
+          )
+        )
+      } else {
+        tags$span(
+          class = "badge bg-warning",
+          "DEV"
+        )
+      }
+    ),
+    tags$div(
+      style = "display: flex; align-items: center; gap: 0.75rem;",
+      actionButton("start_tour", "Guided Tour", class = "btn-outline-light btn-sm", icon = icon("route")),
+      tags$span(
+        style = "color: rgba(255,255,255,0.9); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;",
+        "ADELPHI RESEARCH"
       )
-    },
-    actionButton("start_tour", "Guided Tour", class = "btn-outline-light btn-sm ms-3", style = "vertical-align: middle;", icon = icon("route"))
+    )
   ),
   theme = bs_theme(
     version = 5,
     bootswatch = "default",
-    primary = "#2563eb",
-    secondary = "#737373",
+    primary = "#00A6AD",  # Adelphi teal
+    secondary = "#51626F", # Adelphi secondary text
     success = "#059669",
     info = "#0284c7",
-    warning = "#d97706",
+    warning = "#F2B82D",  # Adelphi yellow
     danger = "#dc2626",
-    base_font = font_google("Inter"),
-    heading_font = font_google("Inter"),
+    base_font = font_collection(font_google("Open Sans"), "Segoe UI", "sans-serif"),  # Aptos-like fallback
+    heading_font = font_collection("Georgia", "Times New Roman", "serif"),
     code_font = font_google("JetBrains Mono"),
-    "body-bg" = "#ffffff",
-    "card-bg" = "#ffffff",
-    "border-radius" = "8px",
-    "border-color" = "#e5e5e5",
-    "input-border-color" = "#e5e5e5",
-    "card-border-color" = "#f0f0f0"
+    "body-bg" = "#F3FBFA",  # Adelphi soft background
+    "card-bg" = "#FFFFFF",
+    "border-radius" = "18px",
+    "border-color" = "rgba(0, 89, 110, 0.10)",
+    "input-border-color" = "rgba(0, 89, 110, 0.10)",
+    "card-border-color" = "rgba(0, 89, 110, 0.10)"
   ),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "theme.css"),
@@ -94,38 +109,47 @@ ui <- page_sidebar(
 
   # Sidebar
   sidebar = sidebar(
-    width = 350,
-    title = "Configuration",
+    width = 360,
+    tags$div(
+      style = "padding: 0 0.5rem 1rem 0.5rem;",
+      tags$div(
+        style = "font-family: Georgia, 'Times New Roman', serif; font-size: 1.25rem; font-weight: 500; color: #24313B; margin-bottom: 0.5rem;",
+        "Analysis Setup"
+      ),
+      tags$p(
+        style = "font-size: 0.8125rem; color: #51626F; margin: 0; line-height: 1.5;",
+        "Configure your decision tree analysis step-by-step"
+      )
+    ),
     accordion(
       id = "sidebar_accordion",
-      open = c("data_panel", "model_panel"),
+      open = c("data_panel"),
       accordion_panel(
-        title = "Data Upload",
+        title = "1. Data",
         value = "data_panel",
         icon = bsicons::bs_icon("cloud-upload"),
         data_import_ui("data")
       ),
       accordion_panel(
-        title = "Data Filter",
+        title = "2. Filter (Optional)",
         value = "filter_panel",
         icon = bsicons::bs_icon("funnel"),
         data_filter_ui("filter")
       ),
-
       accordion_panel(
-        title = "Factor Levels",
-        value = "factor_panel",
-        icon = bsicons::bs_icon("list-ol"),
-        factor_editor_ui("factors")
-      ),
-      accordion_panel(
-        title = "Model Parameters",
+        title = "3. Model Settings",
         value = "model_panel",
         icon = bsicons::bs_icon("sliders"),
         tree_config_ui("config")
       ),
       accordion_panel(
-        title = "AI Configuration",
+        title = "Advanced: Factor Levels",
+        value = "factor_panel",
+        icon = bsicons::bs_icon("list-ol"),
+        factor_editor_ui("factors")
+      ),
+      accordion_panel(
+        title = "AI Assistant",
         value = "ai_panel",
         icon = bsicons::bs_icon("robot"),
         ai_chat_sidebar_ui("ai", PRODUCTION_MODE)

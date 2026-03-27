@@ -204,11 +204,9 @@ model_details_server <- function(id, rv) {
           theme_void() +
           xlim(0, 1) + ylim(0, 1)
       } else {
-        if (rf$type == "classification") {
-          imp <- randomForest::importance(rf, type = 2)
-        } else {
-          imp <- randomForest::importance(rf, type = 1)
-        }
+        # Use type = 1 for Mean Decrease Accuracy for both classification and regression
+        imp <- randomForest::importance(rf, type = 1)
+
         imp_df <- data.frame(
           Variable = rownames(imp),
           Importance = imp[, 1]
@@ -238,7 +236,7 @@ model_details_server <- function(id, rv) {
             axis.title.y = element_blank(),
             panel.grid.major.y = element_blank()
           ) +
-          labs(x = "Importance (Mean Decrease Gini)")
+          labs(x = "Importance (Mean Decrease Accuracy)")
       }
     }, res = 96)
 
@@ -319,12 +317,9 @@ model_details_server <- function(id, rv) {
         return(NULL)
       }
 
-      # Random Forest importance
-      if (rf$type == "classification") {
-        rf_imp_raw <- randomForest::importance(rf, type = 2)
-      } else {
-        rf_imp_raw <- randomForest::importance(rf, type = 1)
-      }
+      # Random Forest importance - use type = 1 for Mean Decrease Accuracy
+      rf_imp_raw <- randomForest::importance(rf, type = 1)
+
       rf_imp <- data.frame(
         Variable = rownames(rf_imp_raw),
         RF_Importance = round(rf_imp_raw[, 1], 2),
